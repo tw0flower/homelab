@@ -1,0 +1,25 @@
+lang en_US
+keyboard --xlayouts='jp'
+timezone Asia/Tokyo --utc
+rootpw $2b$10$rHI5hBzWX4FNwcWlDbxZI.ns2cDALN4yWj0/k4m4iRSkonvLh0S8C --iscrypted
+reboot
+text
+repo --name="Repository" --baseurl=https://ftp.iij.ad.jp/pub/linux/rocky/9.1/BaseOS/x86_64/os
+url --url=https://ftp.iij.ad.jp/pub/linux/rocky/9/BaseOS/x86_64/os
+bootloader --append="rhgb quiet crashkernel=1G-4G:192M,4G-64G:256M,64G-:512M"
+zerombr
+clearpart --all --initlabel
+autopart
+network --bootproto=dhcp
+skipx
+firstboot --disable
+selinux --enforcing
+firewall --enabled --ssh
+%addon com_redhat_oscap
+content-type = scap-security-guide
+profile = xccdf_org.ssgproject.content_profile_pci-dss
+%end
+%packages
+@^minimal-environment
+kexec-tools
+%end

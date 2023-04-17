@@ -1,0 +1,165 @@
+---
+- name: Create root data directory where the boot files will be stored
+  ansible.builtin.file:
+    path: "{{ netboot_data_path }}"
+    state: directory
+    recurse: true
+
+- name: Get iPXE source
+  ansible.builtin.git:
+    repo: https://github.com/ipxe/ipxe.git
+    dest: "{{ netboot_data_path }}/ipxe"
+    version: HEAD
+    clone: true
+    update: true
+
+- name: Install dependencies to build ipxe
+  ansible.builtin.dnf:
+    name:
+      - xz-devel
+  become: true
+
+- name: Configure iPXE chainloading
+  ansible.builtin.template:
+    src: "redirect.ipxe.j2"
+    dest: "{{ netboot_data_path }}/ipxe/src/redirect.ipxe"
+    mode: "0600"
+
+- name: Build iPXE
+  community.general.make:
+    chdir: "{{ netboot_data_path }}/ipxe/src"
+    target: bin-x86_64-efi/ipxe.efi
+    params:
+      EMBED: redirect.ipxe
+
+- name: Download the kickstart files over rsync
+  ansible.posix.synchronize:
+    mode: pull
+    src: "{{ netboot_kickstart_url }}"
+    dest: "{{ netboot_data_path }}/kickstart"
+
+- name: Copy Docker configuration to the data directory
+  ansible.builtin.copy:
+    src: files/docker
+    dest: "{{ netboot_data_path }}"
+    mode: "0600"
+
+- name: Copy dhcpd configuration
+  ansible.builtin.template:
+    src: dnsmasq.conf.j2
+    dest: "{{ netboot_data_path }}/docker/dnsmasq.conf"
+    mode: "0600"
+
+- name: Build tftp image
+  containers.podman.podman_image:
+    name: tftp
+    path: "{{ netboot_data_path }}/docker"
+    force: true
+    build:
+      extra_args: --cap-add=NET_ADMIN,NET_RAW
+
+- name: Allow non-root users to bind to ports < 1024
+  block:
+    - name: Get current net.ipv4.ip_unprivileged_port_start value
+      ansible.builtin.shell:
+        cmd: sysctl net.ipv4.ip_unprivileged_port_start | grep -o [0-9]*$
+      register: sysctl_check_output
+      changed_when: sysctl_check_output.rc != 0
+
+    - name: Allow any user to bind on DHCP ports
+      ansible.posix.sysctl:
+        name: net.ipv4.ip_unprivileged_port_start
+        value: 67
+        state: present
+        reload: true
+      become: true
+
+- name: Copy grub.cfg and kickstart configuration
+  ansible.builtin.template:
+    src: "{{ item.key }}"
+    dest: "{{ item.value }}"
+    mode: "0664"
+  with_dict:
+    grub.cfg.j2: "{{ netboot_data_path }}/kickstart/EFI/BOOT/grub.cfg"
+    metal.ks.j2: "{{ netboot_data_path }}/kickstart/metal.ks"
+
+- name: Copy iPXE boot image
+  ansible.builtin.copy:
+    src: "{{ netboot_data_path }}/ipxe/src/bin-x86_64-efi/ipxe.efi"
+    dest: "{{ netboot_data_path }}/kickstart/"
+    mode: "0664"
+
+# - name: Allow use by containers
+#   community.general.sefcontext:
+#     target: "{{ netboot_data_path }}/kickstart(/.*)?"
+#     setype: container_file_t
+#     state: present
+#   become: true
+
+- name: Fix SELinux permissions
+  ansible.builtin.command:
+    cmd: 'podman unshare chown -R 998:996 "{{ item }}"'
+  register: pod_unshare_init
+  changed_when: pod_unshare_init.rc != 0
+  with_items:
+    - "{{ netboot_data_path }}/kickstart"
+    - "{{ netboot_data_path }}/docker/nginx.conf"
+
+- name: Open DHCP, TFTP and HTTP ports
+  ansible.posix.firewalld:
+    service: "{{ item }}"
+    state: enabled
+  with_items:
+    - dhcp
+    - tftp
+    - http
+
+- name: Delete containers if they already exists, otherwise they won't get recreated
+  containers.podman.podman_container:
+    name: "{{ item }}"
+    state: absent
+  with_items:
+    - homelab_tftp
+    - homelab_http
+
+- name: Start TFTP container
+  containers.podman.podman_container:
+    name: homelab_tftp
+    image: localhost/tftp
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      - '/home/tw0flower/homelab/netboot/kickstart:/var/lib/tftpboot:z'
+    network: host
+    recreate: true
+    force_restart: true
+    state: started
+
+- name: Start HTTP container
+  containers.podman.podman_container:
+    name: homelab_http
+    image: docker.io/nginx
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      - '/home/tw0flower/homelab/netboot/kickstart:/var/www/html:z'
+      - '/home/tw0flower/homelab/netboot/docker/nginx.conf:/etc/nginx/conf.d/default.conf:z'
+    network: host
+    recreate: true
+    force_restart: true
+    state: started
+
+# - name: Set file permissions back
+#   ansible.builtin.command:
+#     cmd: "podman unshare chown -R 0:0 {{ netboot_data_path }}/kickstart'"
+#   register: pod_unshare_init
+#   changed_when: pod_unshare_init.rc != 0
+
+# - name: Set net.ipv4.ip_unprivileged_port_start back to initial value
+#   ansible.posix.sysctl:
+#     name: net.ipv4.ip_unprivileged_port_start
+#     value: sysctl_check_output.stdout
+#     state: present
+#     reload: true

@@ -1,0 +1,5 @@
+{
+    "yaml.schemas": {
+        "https://raw.githubusercontent.com/ansible/ansible-lint/main/src/ansiblelint/schemas/ansible.json#/$defs/tasks": "file:///home/tw0flower/Projets/homelab/metal_provisioning/roles/netboot/tasks/main.yml"
+    }
+}
