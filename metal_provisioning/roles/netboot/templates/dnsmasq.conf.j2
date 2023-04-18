@@ -1,14 +1,9 @@
 # Disable DNS Server.
 port=0
 
-{% if netboot_dhcp_proxy == true %}
 # We're DHCP proxying on the network of the homelab host
 dhcp-range={{ ansible_default_ipv4.address }},proxy
 
-# Based on gist https://gist.github.com/NiKiZe/5c181471b96ac37a069af0a76688944d
-# dhcp-match=set:<tag>,<option number>|option:<option name>|vi-encap:<enterprise>[,<value>]
-# Based on logic in https://gist.github.com/robinsmidsrod/4008017
-# iPXE sends a 175 option, checking suboptions
 dhcp-match=set:ipxe-http,175,19
 dhcp-match=set:ipxe-https,175,20
 dhcp-match=set:ipxe-menu,175,39
@@ -17,17 +12,12 @@ dhcp-match=set:ipxe-bzimage,175,24
 dhcp-match=set:ipxe-iscsi,175,17
 dhcp-match=set:ipxe-efi,175,36
 
-# set ipxe-ok tag if we have correct combination
-# http && menu && iscsi ((pxe && bzimage) || efi)
-tag-if=set:ipxe-ok,tag:ipxe-http,tag:ipxe-menu,tag:ipxe-iscsi,tag:ipxe-pxe,tag:ipxe-bzimage
-tag-if=set:ipxe-ok,tag:ipxe-http,tag:ipxe-menu,tag:ipxe-iscsi,tag:ipxe-efi
-
 #pxe-service=[tag:<tag>,]<CSA>,<menu text>[,<basename>|<bootservicetype>][,<server address>|<server_name>]
 #pxe-prompt=[tag:<tag>,]<prompt>[,<timeout>]
 # these create option 43 cruft, which is required in proxy mode
 # TFTP IP is required on all dhcp-boot lines (unless dnsmasq itself acts as tftp server?)
 
-pxe-service=tag:!ipxe-ok,X86-64_EFI,"Boot from Network (UEFI)","ipxe.efi"
+pxe-service=X86-64_EFI,"Boot from Network (UEFI)","ipxe.efi"
 
 # later match overrides previous, keep ipxe script last
 # server address must be non zero, but can be anythin as long as iPXE script is not fetched over TFTP
@@ -35,18 +25,7 @@ pxe-service=tag:!ipxe-ok,X86-64_EFI,"Boot from Network (UEFI)","ipxe.efi"
 pxe-prompt=tag:ipxe-ok,"Going to boot iPXE Environment...",0
 #dhcp-boot=tag:ipxe-ok,http://{{ ansible_default_ipv4.address }}/undionly.kpxe
 
-{% else %}
-# We're DHCP configuring on this range
-dhcp-range={{ ansible_default_ipv4.network | ansible.netcommon.ipmath(1) }},{{ ansible_default_ipv4.broadcast | ansible.netcommon.ipmath(-1) }},{{ ansible_default_ipv4.netmask }},12h
-dhcp-option=3,{{ ansible_default_ipv4.gateway }}
 
-# Match Arch Types efi x86 and x64
-dhcp-match=set:efi-x86_64,option:client-arch,7
-dhcp-match=set:efi-x86_64,option:client-arch,9
-
-# Set the Boot file based on the tag from above
-dhcp-boot=tag:efi-x86_64,EFI/BOOT/grubx64.efi
-{% endif %}
 # Log DHCP queries to stdout
 log-queries
 log-dhcp
