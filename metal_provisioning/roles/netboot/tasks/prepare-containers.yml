@@ -1,0 +1,48 @@
+---
+- name: Copy kickstart configuration to container's data directory
+  ansible.builtin.template:
+    src: "{{ item.key }}"
+    dest: "{{ item.value }}"
+    mode: "0664"
+  with_dict:
+    metal.ks.j2: "{{ netboot_data_path }}/kickstart/metal.ks"
+
+- name: Copy iPXE boot image to container's data directory
+  ansible.builtin.copy:
+    src: "{{ netboot_data_path }}/ipxe/src/bin-x86_64-efi/ipxe.efi"
+    dest: "{{ netboot_data_path }}/kickstart/"
+    mode: "0664"
+
+- name: Set podman SELinux permissions of homelab directory
+  ansible.builtin.command:
+    cmd: 'podman unshare chown -R 998:996 "{{ item }}"'
+  register: pod_unshare_init
+  changed_when: pod_unshare_init.rc != 0
+  with_items:
+    - "{{ netboot_data_path }}/kickstart"
+    - "{{ netboot_data_path }}/docker/nginx.conf"
+
+- name: Open DHCP, TFTP and HTTP ports
+  ansible.posix.firewalld:
+    service: "{{ item }}"
+    state: enabled
+  with_items:
+    - dhcp
+    - tftp
+    - http
+
+- name: Allow user running podman to bind to ports < 1024
+  block:
+    - name: Get current net.ipv4.ip_unprivileged_port_start value
+      ansible.builtin.shell:
+        cmd: sysctl net.ipv4.ip_unprivileged_port_start | grep -o [0-9]*$
+      register: sysctl_check_output
+      changed_when: sysctl_check_output.rc != 0
+
+    - name: Allow any user to bind on DHCP ports
+      ansible.posix.sysctl:
+        name: net.ipv4.ip_unprivileged_port_start
+        value: 67
+        state: present
+        reload: true
+      become: true

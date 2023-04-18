@@ -1,0 +1,12 @@
+---
+- name: Create netboot data directory where the boot files will be stored
+  ansible.builtin.file:
+    path: "{{ netboot_data_path }}"
+    state: directory
+    recurse: true
+
+- name: Download the kickstart files over rsync
+  ansible.posix.synchronize:
+    mode: pull
+    src: "{{ netboot_kickstart_url }}"
+    dest: "{{ netboot_data_path }}/kickstart"

@@ -16,15 +16,7 @@ dhcp-match=set:ipxe-efi,175,36
 #pxe-prompt=[tag:<tag>,]<prompt>[,<timeout>]
 # these create option 43 cruft, which is required in proxy mode
 # TFTP IP is required on all dhcp-boot lines (unless dnsmasq itself acts as tftp server?)
-
 pxe-service=X86-64_EFI,"Boot from Network (UEFI)","ipxe.efi"
-
-# later match overrides previous, keep ipxe script last
-# server address must be non zero, but can be anythin as long as iPXE script is not fetched over TFTP
-#dhcp-boot=[tag:<tag>,]<filename>,[<servername>[,<server address>|<tftp_servername>]]
-pxe-prompt=tag:ipxe-ok,"Going to boot iPXE Environment...",0
-#dhcp-boot=tag:ipxe-ok,http://{{ ansible_default_ipv4.address }}/undionly.kpxe
-
 
 # Log DHCP queries to stdout
 log-queries

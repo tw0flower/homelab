@@ -4,8 +4,8 @@ timezone Asia/Tokyo --utc
 rootpw $2b$10$rHI5hBzWX4FNwcWlDbxZI.ns2cDALN4yWj0/k4m4iRSkonvLh0S8C --iscrypted
 reboot
 text
-repo --name="Repository" --baseurl={{ netboot_repository_url }}
-url --url={{ netboot_repository_url }}
+repo --name="Repository" --baseurl={{ netboot_os_repository_url }}
+url --url={{ netboot_os_repository_url }}
 bootloader --append="rhgb quiet crashkernel=1G-4G:192M,4G-64G:256M,64G-:512M"
 zerombr
 clearpart --all --initlabel

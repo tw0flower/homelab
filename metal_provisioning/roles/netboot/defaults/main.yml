@@ -4,3 +4,4 @@ netboot_data_path: /home/tw0flower/homelab/netboot
 netboot_kickstart_url: rsync://ftp.iij.ad.jp/pub/linux/rocky/9.1/BaseOS/x86_64/kickstart/
 netboot_os_repository_url: https://ftp.iij.ad.jp/pub/linux/rocky/9.1/BaseOS/x86_64/os
 netboot_dhcp_proxy: true
+netboot_ipxe_repository_url: https://github.com/ipxe/ipxe.git
