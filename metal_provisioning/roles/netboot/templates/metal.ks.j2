@@ -9,7 +9,16 @@ url --url={{ netboot_os_repository_url }}
 bootloader --append="rhgb quiet crashkernel=1G-4G:192M,4G-64G:256M,64G-:512M"
 zerombr
 clearpart --all --initlabel
-autopart
+part /boot --size=1024 --asprimary --fstype=ext4
+part /boot/efi --size=256 --asprimary --fstype=efi
+part pv.1 --size=50000 --grow
+volgroup TheVolGroup pv.1
+logvol / --vgname=TheVolGroup --size=15000 --name=lv_root --fstype=ext4
+logvol / --vgname=TheVolGroup --name=lv_swap --fstype=swap --recommended
+logvol /home --vgname=TheVolGroup --size=7500 --name=lv_home --fstype=xfs
+logvol /var/log --vgname=TheVolGroup --size=5000 --name=lv_var_log --fstype=xfs
+logvol /var/lib/longhorn --vgname=TheVolGroup --size=10000 --fstype=ext4 --name=lv_var_lib_longhorn --grow
+
 network --bootproto=dhcp
 skipx
 firstboot --disable
