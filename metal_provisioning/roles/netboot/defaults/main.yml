@@ -1,8 +1,6 @@
 ---
 # defaults file for netboot
 netboot_data_path: /home/tw0flower/homelab/netboot
-netboot_dhcp_router_ip: 192.168.1.1
-netboot_dhcp_ip_range: 192.168.1.81,192.168.1.91
-netboot_debian_version: stable
 netboot_kickstart_url: rsync://ftp.iij.ad.jp/pub/linux/rocky/9.1/BaseOS/x86_64/kickstart/
+netboot_os_repository_url: https://ftp.iij.ad.jp/pub/linux/rocky/9.1/BaseOS/x86_64/os
 netboot_dhcp_proxy: true
