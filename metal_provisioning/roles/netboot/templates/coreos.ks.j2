@@ -1,0 +1,34 @@
+lang en_US
+keyboard --xlayouts='jp'
+timezone Asia/Tokyo --utc
+rootpw $2b$10$rHI5hBzWX4FNwcWlDbxZI.ns2cDALN4yWj0/k4m4iRSkonvLh0S8C --iscrypted
+sshkey --username=root "{{ ansible_ssh_key.public_key }}"
+reboot
+text
+repo --name="Repository" --baseurl={{ netboot_os_repository_url }}
+url --url={{ netboot_os_repository_url }}
+bootloader --append="rhgb quiet crashkernel=1G-4G:192M,4G-64G:256M,64G-:512M"
+zerombr
+clearpart --all --initlabel
+part /boot --size=1024 --asprimary --fstype=ext4
+part /boot/efi --size=256 --asprimary --fstype=efi
+part pv.1 --size=50000 --grow
+volgroup TheVolGroup pv.1
+logvol / --vgname=TheVolGroup --size=15000 --name=lv_root --fstype=ext4
+logvol swap --vgname=TheVolGroup --name=lv_swap --fstype=swap --recommended
+logvol /home --vgname=TheVolGroup --size=7500 --name=lv_home --fstype=xfs
+logvol /var/log --vgname=TheVolGroup --size=5000 --name=lv_var_log --fstype=xfs
+logvol /var/lib/longhorn --vgname=TheVolGroup --size=10000 --fstype=ext4 --name=lv_var_lib_longhorn --grow
+network --bootproto=dhcp
+skipx
+firstboot --disable
+selinux --enforcing
+firewall --enabled --ssh
+%addon com_redhat_oscap
+content-type = scap-security-guide
+profile = xccdf_org.ssgproject.content_profile_pci-dss
+%end
+%packages
+@^minimal-environment
+kexec-tools
+%end

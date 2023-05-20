@@ -19,12 +19,6 @@
   ansible.builtin.include_tasks:
     file: run-containers.yml
 
-# - name: Allow use by containers
-#   community.general.sefcontext:
-#     target: "{{ netboot_data_path }}/kickstart(/.*)?"
-#     setype: container_file_t
-#     state: present
-#   become: true
 
 # - name: Set file permissions back
 #   ansible.builtin.command:

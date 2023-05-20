@@ -8,7 +8,7 @@
 - name: Get iPXE source
   ansible.builtin.git:
     repo: "{{ netboot_ipxe_repository_url }}"
-    dest: "{{ netboot_data_path }}/ipxe"
+    dest: "{{ homelab_data_path }}/{{ netboot_data_path }}/ipxe"
     version: HEAD
     clone: true
     update: true
@@ -16,12 +16,12 @@
 - name: Configure iPXE chainloading
   ansible.builtin.template:
     src: "redirect.ipxe.j2"
-    dest: "{{ netboot_data_path }}/ipxe/src/redirect.ipxe"
+    dest: "{{ homelab_data_path }}/{{ netboot_data_path }}/ipxe/src/redirect.ipxe"
     mode: "0600"
 
 - name: Build iPXE
   community.general.make:
-    chdir: "{{ netboot_data_path }}/ipxe/src"
+    chdir: "{{ homelab_data_path }}/{{ netboot_data_path }}/ipxe/src"
     target: bin-x86_64-efi/ipxe.efi
     params:
       EMBED: redirect.ipxe

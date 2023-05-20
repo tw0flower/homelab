@@ -1,0 +1,6 @@
+#!ipxe
+  
+dhcp
+initrd http://{{ ansible_default_ipv4.address }}/images/pxeboot/initrd.img
+kernel http://{{ ansible_default_ipv4.address }}/images/pxeboot/vmlinuz inst.repo=http://{{ ansible_default_ipv4.address }} inst.ks=http://{{ ansible_default_ipv4.address }}/metal.ks quiet
+boot

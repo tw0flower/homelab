@@ -5,13 +5,35 @@
     dest: "{{ item.value }}"
     mode: "0664"
   with_dict:
-    metal.ks.j2: "{{ netboot_data_path }}/kickstart/metal.ks"
+    metal.ks.j2: "{{ homelab_data_path }}/{{ netboot_data_path }}/kickstart/metal.ks"
 
 - name: Copy iPXE boot image to container's data directory
   ansible.builtin.copy:
-    src: "{{ netboot_data_path }}/ipxe/src/bin-x86_64-efi/ipxe.efi"
-    dest: "{{ netboot_data_path }}/kickstart/"
+    src: "{{ homelab_data_path }}/{{ netboot_data_path }}/ipxe/src/bin-x86_64-efi/ipxe.efi"
+    dest: "{{ homelab_data_path }}/{{ netboot_data_path }}/kickstart/"
     mode: "0664"
+
+- name: Create dynamic iPXE application configuration directory
+  ansible.builtin.file:
+    path: "{{ homelab_data_path }}/{{ netboot_data_path }}/dynamic_ipxe/boot_config"
+    state: directory
+    recurse: true
+
+- name: Copy dynamic iPXE configuration application configuration file
+  ansible.builtin.copy:
+    src: "files/homelab_dynamic_ipxe_config.py"
+    dest: "{{ homelab_data_path }}/{{ netboot_data_path }}/dynamic_ipxe/config.py"
+    mode: "0600"
+
+- name: Copy dynamic iPXE application boot configuration files
+  ansible.builtin.template:
+    src: "{{ item.key }}"
+    dest: "{{ homelab_data_path }}/{{ netboot_data_path }}/dynamic_ipxe/{{ item.value }}"
+    mode: "0600"
+  with_dict:
+    boot_install_coreos.ipxe.j2: boot_config/boot_install_coreos.ipxe
+    boot_install_rocky.ipxe.j2: boot_config/boot_install_rocky.ipxe
+    homelab_mac_association.yml.j2: mac_association.yml
 
 - name: Set podman SELinux permissions of homelab directory
   ansible.builtin.command:
@@ -19,8 +41,8 @@
   register: pod_unshare_init
   changed_when: pod_unshare_init.rc != 0
   with_items:
-    - "{{ netboot_data_path }}/kickstart"
-    - "{{ netboot_data_path }}/docker/nginx.conf"
+    - "{{ homelab_data_path }}/{{ netboot_data_path }}/kickstart"
+    - "{{ homelab_data_path }}/{{ netboot_data_path }}/docker_dnsmasq/nginx.conf"
 
 - name: Open DHCP, TFTP and HTTP ports
   ansible.posix.firewalld:

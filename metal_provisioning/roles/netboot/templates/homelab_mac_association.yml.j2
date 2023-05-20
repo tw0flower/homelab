@@ -1,0 +1,6 @@
+{% for m in groups['kubernetes'] %}
+{{ hostvars[m]['mac'] }}: boot_install_coreos.ipxe
+{% endfor %}
+{% for m in groups['freeipa'] %}
+{{ hostvars[m]['mac'] }}: boot_install_rocky.ipxe
+{% endfor %}
