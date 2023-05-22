@@ -19,7 +19,7 @@ logvol swap --vgname=TheVolGroup --name=lv_swap --fstype=swap --recommended
 logvol /home --vgname=TheVolGroup --size=7500 --name=lv_home --fstype=xfs
 logvol /var/log --vgname=TheVolGroup --size=5000 --name=lv_var_log --fstype=xfs
 logvol /var/lib/longhorn --vgname=TheVolGroup --size=10000 --fstype=ext4 --name=lv_var_lib_longhorn --grow
-network --bootproto=dhcp
+network --bootproto=dhcp --ip={{ hostvars[item]['ansible_host'] }}
 skipx
 firstboot --disable
 selinux --enforcing

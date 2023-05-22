@@ -1,12 +1,4 @@
 ---
-- name: Copy kickstart configuration to container's data directory
-  ansible.builtin.template:
-    src: "{{ item.key }}"
-    dest: "{{ item.value }}"
-    mode: "0664"
-  with_dict:
-    metal.ks.j2: "{{ homelab_data_path }}/{{ netboot_data_path }}/kickstart/metal.ks"
-
 - name: Copy iPXE boot image to container's data directory
   ansible.builtin.copy:
     src: "{{ homelab_data_path }}/{{ netboot_data_path }}/ipxe/src/bin-x86_64-efi/ipxe.efi"
@@ -22,7 +14,7 @@
 - name: Copy dynamic iPXE configuration application configuration file
   ansible.builtin.copy:
     src: "files/homelab_dynamic_ipxe_config.py"
-    dest: "{{ homelab_data_path }}/{{ netboot_data_path }}/dynamic_ipxe/config.py"
+    dest: "{{ homelab_data_path }}/{{ netboot_data_path }}/dynamic_ipxe/homelab_dynamic_ipxe_config.py"
     mode: "0600"
 
 - name: Copy dynamic iPXE application boot configuration files
@@ -33,7 +25,14 @@
   with_dict:
     boot_install_coreos.ipxe.j2: boot_config/boot_install_coreos.ipxe
     boot_install_rocky.ipxe.j2: boot_config/boot_install_rocky.ipxe
-    homelab_mac_association.yml.j2: mac_association.yml
+    homelab_mac_association.yml.j2: homelab_mac_association.yml
+
+- name: Create kickstart files for each FreeIPA machine
+  ansible.builtin.template:
+    src: "boot_install_rocky.ipxe.j2"
+    dest: "{{ homelab_data_path }}/{{ netboot_data_path }}/dynamic_ipxe/boot_config/{{ hostvars[item]['mac'] }}.ks"
+    mode: "0600"
+  loop: "{{ query('inventory_hostnames', 'freeipa') }}"
 
 - name: Set podman SELinux permissions of homelab directory
   ansible.builtin.command:
@@ -52,6 +51,12 @@
     - dhcp
     - tftp
     - http
+
+- name: Open port 8000
+  ansible.posix.firewalld:
+    port: "8000/tcp"
+    state: enabled
+
 
 - name: Allow user running podman to bind to ports < 1024
   block:
