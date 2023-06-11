@@ -1,7 +1,7 @@
 lang en_US
 keyboard --xlayouts='jp'
 timezone Asia/Tokyo --utc
-rootpw $2b$10$rHI5hBzWX4FNwcWlDbxZI.ns2cDALN4yWj0/k4m4iRSkonvLh0S8C --iscrypted
+rootpw --lock
 sshkey --username=root "{{ ansible_ssh_key.public_key }}"
 reboot
 text

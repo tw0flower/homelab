@@ -1,7 +1,9 @@
 ---
 # defaults file for netboot
 netboot_data_path: netboot
-netboot_kickstart_url: rsync://ftp.iij.ad.jp/pub/linux/rocky/9.1/BaseOS/x86_64/kickstart/
-netboot_os_repository_url: https://ftp.iij.ad.jp/pub/linux/rocky/9.1/BaseOS/x86_64/os
+netboot_kickstart_url: rsync://ftp.iij.ad.jp/pub/linux/rocky/9.2/BaseOS/x86_64/kickstart/
+netboot_os_repository_url: https://ftp.iij.ad.jp/pub/linux/rocky/9.2/BaseOS/x86_64/os
 netboot_dhcp_proxy: true
 netboot_ipxe_repository_url: https://github.com/ipxe/ipxe.git
+netboot_coreos_stream: stable
+netboot_coreos_version: 38.20230514.3.0

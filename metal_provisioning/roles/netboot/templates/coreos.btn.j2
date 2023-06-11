@@ -1,0 +1,26 @@
+variant: fcos
+version: 1.5.0
+storage:
+  disks:
+  - device: /dev/disk/by-id/coreos-boot-disk
+    wipe_table: true
+    partitions:
+    - number: 4
+      label: root
+      size_mib: 12288
+      resize: true
+    - size_mib: 0
+      label: var
+  filesystems:
+    - path: /var
+      device: /dev/disk/by-partlabel/var
+      format: ext4
+      with_mount_unit: true
+  passwd:
+    users:
+      - name: ansible
+        ssh_authorized_keys:
+          - {{ ansible_ssh_key.public_key }}
+        groups:
+          - wheel
+          - sudo

@@ -12,12 +12,19 @@
     version: HEAD
     clone: true
     update: true
+    force: true
 
 - name: Configure iPXE chainloading
   ansible.builtin.template:
     src: "redirect.ipxe.j2"
     dest: "{{ homelab_data_path }}/{{ netboot_data_path }}/ipxe/src/redirect.ipxe"
     mode: "0600"
+
+- name: Enable HTTPS support in iPXE
+  ansible.builtin.lineinfile:
+    dest: "{{ homelab_data_path }}/{{ netboot_data_path }}/ipxe/src/config/general.h"
+    regexp: '^#undef	DOWNLOAD_PROTO_HTTPS	.*$'
+    line: '#define DOWNLOAD_PROTO_HTTPS'
 
 - name: Build iPXE
   community.general.make:

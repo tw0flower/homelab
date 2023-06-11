@@ -7,4 +7,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD [ "gunicorn", "-w", "4", "app:app" ]
+EXPOSE 8000/tcp
+
+CMD [ "gunicorn", "--bind=0.0.0.0", "-w", "4", "app:app" ]    

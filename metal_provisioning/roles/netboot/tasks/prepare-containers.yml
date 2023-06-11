@@ -29,10 +29,25 @@
 
 - name: Create kickstart files for each FreeIPA machine
   ansible.builtin.template:
-    src: "boot_install_rocky.ipxe.j2"
-    dest: "{{ homelab_data_path }}/{{ netboot_data_path }}/dynamic_ipxe/boot_config/{{ hostvars[item]['mac'] }}.ks"
-    mode: "0600"
+    src: "rocky.ks.j2"
+    dest: "{{ homelab_data_path }}/{{ netboot_data_path }}/kickstart/{{ hostvars[item]['mac'] }}.ks"
+    mode: "0644"
   loop: "{{ query('inventory_hostnames', 'freeipa') }}"
+
+- name: Create ignition files for each CoreOS machine
+  ansible.builtin.template:
+    src: "coreos.btn.j2"
+    dest: "{{ homelab_data_path }}/{{ netboot_data_path }}/kickstart/{{ hostvars[item]['mac'] }}.btn"
+    mode: "0644"
+  loop: "{{ query('inventory_hostnames', 'kubernetes') }}"
+
+- name: Convert all Butane files to ignition
+  ansible.builtin.command:
+    cmd: butane {{ item }} -o {{ item | splitext | first }}.ign
+  with_fileglob:
+    - "{{ homelab_data_path }}/{{ netboot_data_path }}/kickstart/*.btn"
+  register: butane_output
+  changed_when: butane_output.rc != 0
 
 - name: Set podman SELinux permissions of homelab directory
   ansible.builtin.command:

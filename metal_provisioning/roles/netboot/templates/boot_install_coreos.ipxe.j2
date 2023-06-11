@@ -1,16 +1,11 @@
 #!ipxe
-  
+
 dhcp
-initrd http://{{ ansible_default_ipv4.address }}/images/pxeboot/initrd.img
-kernel http://{{ ansible_default_ipv4.address }}/images/pxeboot/vmlinuz inst.repo=http://{{ ansible_default_ipv4.address }} inst.ks=http://{{ ansible_default_ipv4.address }}/metal.ks quiet
-boot
 
-#!ipxe
-
-set STREAM stable
-set VERSION 38.20230430.3.1
+set STREAM {{ netboot_coreos_stream }}
+set VERSION {{ netboot_coreos_version }}
 set INSTALLDEV /dev/sda
-set CONFIGURL http://{{ ansible_default_ipv4.address }}:8000/coreos.ign
+set CONFIGURL http://{{ ansible_default_ipv4.address }}/${net0/mac}.ign
 
 set BASEURL https://builds.coreos.fedoraproject.org/prod/streams/${STREAM}/builds/${VERSION}/x86_64
 
