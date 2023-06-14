@@ -72,19 +72,10 @@
     port: "8000/tcp"
     state: enabled
 
-
-- name: Allow user running podman to bind to ports < 1024
-  block:
-    - name: Get current net.ipv4.ip_unprivileged_port_start value
-      ansible.builtin.shell:
-        cmd: sysctl net.ipv4.ip_unprivileged_port_start | grep -o [0-9]*$
-      register: sysctl_check_output
-      changed_when: sysctl_check_output.rc != 0
-
-    - name: Allow any user to bind on DHCP ports
-      ansible.posix.sysctl:
-        name: net.ipv4.ip_unprivileged_port_start
-        value: 67
-        state: present
-        reload: true
-      become: true
+- name: Allow any user to bind on DHCP ports
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_unprivileged_port_start
+    value: 67
+    state: present
+    reload: true
+  become: true

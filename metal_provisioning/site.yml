@@ -1,5 +1,0 @@
----
-- name: Install and start server for PXE boot locally
-  hosts: localhost
-  roles:
-    - role: 'netboot'

@@ -18,17 +18,3 @@
 - name: Run containers TFTP and HTTP servers
   ansible.builtin.include_tasks:
     file: run-containers.yml
-
-
-# - name: Set file permissions back
-#   ansible.builtin.command:
-#     cmd: "podman unshare chown -R 0:0 {{ netboot_data_path }}/kickstart'"
-#   register: pod_unshare_init
-#   changed_when: pod_unshare_init.rc != 0
-
-# - name: Set net.ipv4.ip_unprivileged_port_start back to initial value
-#   ansible.posix.sysctl:
-#     name: net.ipv4.ip_unprivileged_port_start
-#     value: sysctl_check_output.stdout
-#     state: present
-#     reload: true

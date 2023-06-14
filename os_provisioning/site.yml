@@ -1,0 +1,20 @@
+---
+- name: Install and start server for PXE boot locally
+  hosts: localhost
+  roles:
+    - role: 'netboot'
+  tags: 'netboot'
+
+- name: Wait for install to finish
+  hosts: all
+  gather_facts: false
+  roles:
+    - role: 'os_install'
+  tags: 'os_install'
+
+- name: Teardown containers
+  hosts: localhost
+  roles:
+    - role: 'netboot_teardown'
+  tags: 'netboot_teardown'
+

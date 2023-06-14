@@ -1,0 +1,21 @@
+---
+- name: Send a magic Wake-on-LAN packet all servers
+  community.general.wakeonlan:
+    mac: "{{ mac }}"
+  delegate_to: localhost
+
+- name: Wait for system to become reachable
+  ansible.builtin.wait_for_connection:
+    timeout: "{{ os_install_host_wait_timeout }}"
+    connect_timeout: 30
+    delay: 0
+  vars:
+    ansible_host_key_checking: false
+  ignore_unreachable: true
+
+- name: Add SSH keys to known hosts
+  ansible.builtin.command:
+    cmd: "ssh-keyscan {{ ansible_host }} >> ~/.ssh/known_hosts"
+  delegate_to: localhost
+  register: ssh_keyscan_output
+  changed_when: ssh_keyscan_output.rc != 0

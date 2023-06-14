@@ -2,14 +2,17 @@ lang en_US
 keyboard --xlayouts='jp'
 timezone Asia/Tokyo --utc
 rootpw --lock
-sshkey --username=root "{{ ansible_ssh_key.public_key }}"
+user --name=ansible
+sshkey --username=ansible "{{ ansible_ssh_key.public_key }}"
 reboot
 text
 repo --name="Repository" --baseurl={{ netboot_os_repository_url }}
 url --url={{ netboot_os_repository_url }}
 bootloader --append="rhgb quiet crashkernel=1G-4G:192M,4G-64G:256M,64G-:512M"
 zerombr
+{% if netboot_wipe_everything%}
 clearpart --all --initlabel
+{% endif %}
 part /boot --size=1024 --asprimary --fstype=ext4
 part /boot/efi --size=256 --asprimary --fstype=efi
 part pv.1 --size=50000 --grow
@@ -31,4 +34,7 @@ profile = xccdf_org.ssgproject.content_profile_pci-dss
 %packages
 @^minimal-environment
 kexec-tools
+%end
+%post
+echo "ansible	ALL=(ALL)	NOPASSWD: ALL" > /etc/sudoers.d/00_ansible
 %end

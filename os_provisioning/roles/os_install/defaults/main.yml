@@ -1,0 +1,3 @@
+---
+# defaults file for os_install
+os_install_host_wait_timeout: 1200

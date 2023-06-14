@@ -1,0 +1,35 @@
+---
+- name: If not specified, set homelab data directory to $HOME/homelab
+  ansible.builtin.set_fact:
+    homelab_data_path: "{{ ansible_env.HOME }}/homelab"
+
+- name: Set file permissions back
+  ansible.builtin.command:
+    cmd: 'podman unshare chown -R 0:0 "{{ item }}"'
+  register: pod_unshare_reverse
+  changed_when: pod_unshare_reverse.rc != 0
+  with_items:
+    - "{{ homelab_data_path }}/{{ netboot_data_path }}/kickstart"
+    - "{{ homelab_data_path }}/{{ netboot_data_path }}/docker_dnsmasq/nginx.conf"
+
+- name: Allow any user to bind on DHCP ports
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_unprivileged_port_start
+    value: 1024
+    state: present
+    reload: true
+  become: true
+
+- name: Close DHCP, TFTP and HTTP ports
+  ansible.posix.firewalld:
+    service: "{{ item }}"
+    state: disabled
+  with_items:
+    - dhcp
+    - tftp
+    - http
+
+- name: Open port 8000
+  ansible.posix.firewalld:
+    port: "8000/tcp"
+    state: disabled

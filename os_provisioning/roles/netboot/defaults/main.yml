@@ -7,3 +7,4 @@ netboot_dhcp_proxy: true
 netboot_ipxe_repository_url: https://github.com/ipxe/ipxe.git
 netboot_coreos_stream: stable
 netboot_coreos_version: 38.20230514.3.0
+netboot_wipe_everything: false
