@@ -1,0 +1,7 @@
+---
+- name: Set SSSD settings
+  ansible.builtin.template:
+    src: sssd.conf.j2
+    dest: /etc/sssd/sssd.conf
+    mode: "0600"
+  notify: restart sssd

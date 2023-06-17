@@ -18,3 +18,34 @@
     - role: 'netboot_teardown'
   tags: 'netboot_teardown'
 
+- name: Create passwords for FreeIPA
+  hosts: localhost
+  become: false
+  pre_tasks:
+    - name: If not specified, set homelab data directory to $HOME/homelab
+      ansible.builtin.set_fact:
+        homelab_data_path: "{{ ansible_env.HOME }}/homelab"
+
+    - name: Generate random passwords for FreeIPA
+      ansible.builtin.set_fact:
+        ipadm_password: "{{ lookup('ansible.builtin.password', homelab_data_path + '/' + 'passwords' + '/' + 'ipadm_password', length=15) }}"
+        ipaadmin_password: "{{ lookup('ansible.builtin.password', homelab_data_path + '/' + 'passwords' + '/' + 'ipaadmin_password', length=15) }}"
+
+- name: Install FreeIPA
+  hosts: freeipa
+  become: false
+  pre_tasks:
+    - name: Set FreeIPA hostname
+      ansible.builtin.hostname:
+        name: "{{ inventory_hostname }}.{{ ipaserver_domain }}"
+        use: systemd
+      become: true
+  roles:
+    - role: 'freeipa.ansible_freeipa.ipaserver'
+      become: true
+      state: present
+  tags: 'freeipa'
+
+- name: Install k3s
+  hosts: kubernetes
+  become: true
