@@ -16,3 +16,4 @@ This project was inspired by [Khue's Homelab](https://github.com/khuedoan/homela
 - [ ] K3S cluster deployment
 - [ ] Internal and external services separation
 - [ ] Keycloak SSO
+- [ ] Control reboot of Fedora Core OS nodes using [airlock](https://github.com/coreos/airlock)
