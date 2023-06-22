@@ -41,6 +41,12 @@
     mode: "0644"
   loop: "{{ query('inventory_hostnames', 'kubernetes') }}"
 
+- name: Create ignition configuration for the installer
+  ansible.builtin.template:
+    src: "install.btn.j2"
+    dest: "{{ homelab_data_path }}/{{ netboot_data_path }}/kickstart/install.btn"
+    mode: "0644"
+
 - name: Convert all Butane files to ignition
   ansible.builtin.command:
     cmd: butane {{ item }} -o {{ item | splitext | first }}.ign

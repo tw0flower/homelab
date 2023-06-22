@@ -1,0 +1,3 @@
+---
+# defaults file for freeipa_client
+ansible_enroll_user: automation_enroll

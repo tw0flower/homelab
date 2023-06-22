@@ -1,0 +1,35 @@
+[domain/{{ ipaserver_domain }}]
+
+id_provider = ipa
+ipa_server = _srv_, {{ groups['freeipa'][0] }}.int.ankhmorpork.host
+ipa_domain = {{ ipaserver_domain }}
+ipa_hostname = {{ inventory_hostname }}.{{ ipaserver_domain }}
+auth_provider = ipa
+chpass_provider = ipa
+access_provider = ipa
+cache_credentials = True
+ldap_tls_cacert = /etc/ipa/ca.crt
+krb5_store_password_if_offline = True
+[sssd]
+services = nss, pam, ssh, sudo
+
+domains = {{ ipaserver_domain }}
+[nss]
+homedir_substring = /home
+filter_groups = ansible
+filter_users = ansible
+
+[pam]
+
+[sudo]
+
+[autofs]
+
+[ssh]
+
+[pac]
+
+[ifp]
+
+[session_recording]
+

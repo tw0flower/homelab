@@ -1,0 +1,29 @@
+variant: fcos
+version: 1.5.0
+storage:
+  files:
+    - path: /usr/local/bin/pre-install.sh
+      mode: 0o555
+      contents:
+        inline: |
+          #!/usr/bin/bash
+          set -euxo pipefail
+          boot_device="$(sed -nE 's,.+ coreos\.inst\.install_dev=([^ ]+).*,\1,p' /proc/cmdline)"
+          # wipe the boot disk.
+          wipefs --all $boot_device
+          blkdiscard $boot_device
+systemd:
+  units:
+    - name: live-pre-install.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=live pre install
+        After=coreos-installer-pre.target
+        Before=coreos-installer.service
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/local/bin/pre-install.sh
+        RemainAfterExit=yes
+        [Install]
+        RequiredBy=coreos-installer.service

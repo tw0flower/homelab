@@ -1,0 +1,25 @@
+---
+# - name: Install sssd config
+#   ansible.builtin.template:
+#     src: sssd.conf.j2
+#     dest: /etc/sssd/sssd.conf
+#     mode: "0600"
+
+- name: Install FreeIPA clients
+  ansible.builtin.command:
+    cmd: "/usr/sbin/ipa-client-install -U \
+      --domain={{ ipaserver_domain }} \
+      --realm={{ ipaserver_realm }} \
+      --server={{ groups['freeipa'][0] }}.{{ ipaserver_domain }} \
+      -p admin \
+      -w '{{ ipaadmin_password }}' \
+      --hostname {{ inventory_hostname}}.{{ ipaserver_domain }} \
+      --mkhomedir \
+      --no-sshd \
+      --force-join"
+  retries: 15
+  delay: 10
+  until: ipa_client_install_output.rc == 0 or ipa_client_install_output.rc == 3
+  register: ipa_client_install_output
+  changed_when: ipa_client_install_output.rc != 0 and ipa_client_install_output.rc != 3
+  failed_when: ipa_client_install_output.rc not in [1, 3]

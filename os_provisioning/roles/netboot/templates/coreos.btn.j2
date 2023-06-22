@@ -3,27 +3,25 @@ version: 1.5.0
 storage:
   disks:
   - device: /dev/disk/by-id/coreos-boot-disk
-    wipe_table: false
     partitions:
     - number: 4
       label: root
       size_mib: 10240
       resize: true
+    - label: swap
+      size_mib: {{ netboot_swap_size}}
     - size_mib: 0
       label: var
   filesystems:
-    - path: /var
-      device: /dev/disk/by-partlabel/var
+    - device: /dev/disk/by-partlabel/var
+      path: /var
       format: ext4
       with_mount_unit: true
-{% if netboot_wipe_everything%}
-      filesystem_wipe: true
-{% endif %}
-  files:
-    - path: /etc/hostname
-      mode: 0644
-      contents:
-        inline: {{ item }}
+      wipe_filesystem: true
+    - device: /dev/disk/by-partlabel/swap
+      format: swap
+      wipe_filesystem: true
+      with_mount_unit: true
 passwd:
   users:
     - name: ansible
@@ -55,6 +53,30 @@ systemd:
         # added to the root image in a future Fedora CoreOS release as it will
         # prevent the service from failing.
         ExecStart=/usr/bin/rpm-ostree install --apply-live --allow-inactive --idempotent python
+        ExecStart=/bin/touch /var/lib/%N.stamp
+
+        [Install]
+        WantedBy=multi-user.target
+    - name: rpm-ostree-install-freeipa-client.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Layer the FreeIPA client with rpm-ostree
+        Wants=network-online.target
+        After=network-online.target rpm-ostree-install-python.service
+        # We run before `zincati.service` to avoid conflicting rpm-ostree
+        # transactions.
+        Before=zincati.service
+        ConditionPathExists=!/var/lib/%N.stamp
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        # `--allow-inactive` ensures that rpm-ostree does not return an error
+        # if the package is already installed. This is useful if the package is
+        # added to the root image in a future Fedora CoreOS release as it will
+        # prevent the service from failing.
+        ExecStart=/usr/bin/rpm-ostree install --apply-live --allow-inactive --idempotent freeipa-client
         ExecStart=/bin/touch /var/lib/%N.stamp
 
         [Install]
