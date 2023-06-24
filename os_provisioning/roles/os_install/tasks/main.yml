@@ -13,14 +13,3 @@
   vars:
     ansible_host_key_checking: false
   ignore_unreachable: true
-
-- name: Set DNS to FreeIPA server
-  community.general.nmcli:
-    conn_name: "Wired connection 1"
-    type: ethernet
-    dns4:
-      - "{{ hostvars[groups['freeipa'][0]]['ansible_host'] }}"
-    state: present
-    dns4_ignore_auto: true
-  when: inventory_hostname in groups['kubernetes']
-  notify: Restart NetworkManager

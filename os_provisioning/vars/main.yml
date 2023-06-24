@@ -1,0 +1,7 @@
+---
+ipaserver_domain: int.ankhmorpork.host
+ipaserver_realm: INT.ANKHMORPORK.HOST
+ipaserver_setup_dns: true
+ipaserver_auto_forwarders: true
+homelab_data_path: /home/leo/homelab
+netboot_wipe_everything: true

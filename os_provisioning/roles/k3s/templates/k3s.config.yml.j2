@@ -1,0 +1,14 @@
+{% if inventory_hostname == groups['servers'][0] %}
+cluster-init: true
+{% else %}
+server: https://{{ groups['servers'][0] }}.{{ ipaserver_domain }}:6443
+{% endif %}
+
+{% if inventory_hostname in groups['servers'] %}
+token-file: {{ k3s_server_token_path }}
+agent-token-file: {{ k3s_agent_token_path }}
+disable-cloud-controller: true
+secrets-encryption: true
+{% else %}
+token-file: {{ k3s_agent_token_path }}
+{% endif %}

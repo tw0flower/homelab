@@ -1,6 +1,101 @@
 ---
-- name: Configure k3s
+- name: Get URL for the latest version of k3s-selinux
+  ansible.builtin.uri:
+    url: https://api.github.com/repos/k3s-io/k3s-selinux/releases/latest
+    body_format: json
+    validate_certs: true
+  register: k3s_selinux_releases
+  delegate_to: "{{ groups['kubernetes'][0] }}"
+  run_once: true
+
+- name: Get URL of latest k3s-selinux version from Github's API result
+  ansible.builtin.set_fact:
+    k3s_selinux_url: "{{ k3s_selinux_releases | community.general.json_query(url_query) | first }}"
+  vars:
+    url_query: "json.assets[?contains(name, 'coreos.noarch.rpm')].browser_download_url"
+  delegate_to: localhost
+  run_once: true
+
+- name: Install k3s-selinux
+  community.general.rpm_ostree_pkg:
+    name: "{{ k3s_selinux_url }}"
+    state: present
+  notify: Reboot server
+
+- name: Create the k3s configuration directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  with_items:
+    - /etc/rancher/k3s
+    - /etc/rancher/node
+
+- name: Copy server token
+  ansible.builtin.copy:
+    content: "{{ lookup('ansible.builtin.password', homelab_data_path + '/' + 'passwords' + '/' + 'k3s_server_token', length=32) | b64encode }}"
+    dest: "{{ k3s_server_token_path }}"
+    mode: "0600"
+  when: inventory_hostname in groups['servers']
+
+- name: Copy agent token
+  ansible.builtin.copy:
+    content: "{{ lookup('ansible.builtin.password', homelab_data_path + '/' + 'passwords' + '/' + 'k3s_agent_token', length=32) | b64encode }}"
+    dest: "{{ k3s_agent_token_path }}"
+    mode: "0600"
+
+- name: Copy k3s configuration
   ansible.builtin.template:
     src: k3s.config.yml.j2
     dest: /etc/rancher/k3s/config.yaml
     mode: "0600"
+
+- name: Get URL for the latest version of k3s
+  ansible.builtin.uri:
+    url: https://api.github.com/repos/k3s-io/k3s/releases/latest
+    body_format: json
+    validate_certs: true
+  register: k3s_releases
+  delegate_to: "{{ groups['kubernetes'][0] }}"
+  run_once: true
+
+- name: Get URL of latest k3s version from Github's API result
+  ansible.builtin.set_fact:
+    k3s_url: "{{ k3s_releases | community.general.json_query(url_query) | first }}"
+  vars:
+    url_query: "json.assets[?name == 'k3s'].browser_download_url"
+  delegate_to: localhost
+  run_once: true
+
+- name: Install k3s binary
+  ansible.builtin.get_url:
+    url: "{{ k3s_url }}"
+    dest: "/usr/local/bin"
+    mode: "0754"
+
+- name: Install k3s service file
+  ansible.builtin.template:
+    src: k3s.service.j2
+    dest: /etc/systemd/system/k3s.service
+    mode: "0644"
+
+- name: Enable k3s service and start it
+  ansible.builtin.service:
+    name: k3s
+    state: restarted
+    enabled: true
+
+- name: Pull k3s configuration from server
+  ansible.builtin.slurp:
+    src: /etc/rancher/k3s/k3s.yaml
+  register: k3s_config
+  delegate_to: "{{ groups['servers'][0] }}"
+
+- name: Save edited k3s configuration to use with kubectl
+  ansible.builtin.copy:
+    content: "{{ k3s_config.content | b64decode | replace('127.0.0.1', hostvars[groups['servers'][0]].ansible_host) }}"
+    dest: "{{ homelab_data_path }}/kubeconfig"
+    mode: "0600"
+  delegate_to: localhost
+  run_once: true
+  become: false

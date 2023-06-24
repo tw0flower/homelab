@@ -11,7 +11,7 @@ storage:
           boot_device="$(sed -nE 's,.+ coreos\.inst\.install_dev=([^ ]+).*,\1,p' /proc/cmdline)"
           # wipe the boot disk.
           wipefs --all $boot_device
-          blkdiscard $boot_device
+          #blkdiscard $boot_device
 systemd:
   units:
     - name: live-pre-install.service
