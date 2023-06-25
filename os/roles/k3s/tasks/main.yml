@@ -49,6 +49,7 @@
     src: k3s.config.yml.j2
     dest: /etc/rancher/k3s/config.yaml
     mode: "0600"
+  notify: Restart k3s
 
 - name: Get URL for the latest version of k3s
   ansible.builtin.uri:
@@ -72,18 +73,18 @@
     url: "{{ k3s_url }}"
     dest: "/usr/local/bin"
     mode: "0754"
+  notify: Restart k3s
+
 
 - name: Install k3s service file
   ansible.builtin.template:
     src: k3s.service.j2
     dest: /etc/systemd/system/k3s.service
     mode: "0644"
+  notify: Restart k3s
 
-- name: Enable k3s service and start it
-  ansible.builtin.service:
-    name: k3s
-    state: restarted
-    enabled: true
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers
 
 - name: Pull k3s configuration from server
   ansible.builtin.slurp:
