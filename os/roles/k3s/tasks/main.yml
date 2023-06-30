@@ -75,7 +75,6 @@
     mode: "0754"
   notify: Restart k3s
 
-
 - name: Install k3s service file
   ansible.builtin.template:
     src: k3s.service.j2
@@ -100,3 +99,9 @@
   delegate_to: localhost
   run_once: true
   become: false
+
+- name: Install Helm
+  community.general.rpm_ostree_pkg:
+    name: "helm"
+    state: present
+  notify: Reboot server

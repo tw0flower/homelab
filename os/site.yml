@@ -2,7 +2,7 @@
 - name: Install and start server for PXE boot locally
   hosts: localhost
   vars_files:
-    - vars/main.yml
+    - ../vars.yml
   roles:
     - role: 'netboot'
   tags: 'netboot'
@@ -10,7 +10,7 @@
 - name: Provision the bare-metal servers
   hosts: all
   vars_files:
-    - vars/main.yml
+    - ../vars.yml
   gather_facts: false
   become: true
   roles:
@@ -27,7 +27,7 @@
   hosts: freeipa
   become: false
   vars_files:
-    - vars/main.yml
+    - ../vars.yml
   pre_tasks:
     - name: Set FreeIPA hostname
       ansible.builtin.hostname:
@@ -49,7 +49,7 @@
   hosts: kubernetes
   become: true
   vars_files:
-    - vars/main.yml
+    - ../vars.yml
   roles:
     - freeipa_client
   vars:
@@ -67,4 +67,4 @@
   tags:
     - k3s
   vars_files:
-    - vars/main.yml
+    - ../vars.yml
