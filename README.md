@@ -18,13 +18,13 @@ In addition, a VPN is installed on the Kubernetes cluster to provide access to t
 
 # Features
 Below is a list of tentative features. Expectations will probably move along the way and some features are more of a priority to me than others.
-- [] Basic public application deployment
-- [] Automated DNS update for external services
-- [] Basic internal application deployment
-- [] Automated DNS update for internal services
-- [] Automated certificate management for internal services
-- [] Coordinated reboot/upgrade of kubernetes machines using (airlock)[https://github.com/coreos/airlock]
-- [] Virtualized testing and development environment
+- [ ] Basic public application deployment
+- [ ] Automated DNS update for external services
+- [ ] Basic internal application deployment
+- [ ] Automated DNS update for internal services
+- [ ] Automated certificate management for internal services
+- [ ] Coordinated reboot/upgrade of kubernetes machines using (airlock)[https://github.com/coreos/airlock]
+- [ ] Virtualized testing and development environment
 
 # Wouldn't have happened without them
 I wouldn't be able to build this project if they hadn't published invaluable information on the different pieces of software that I use:
