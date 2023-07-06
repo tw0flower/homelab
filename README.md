@@ -2,8 +2,8 @@
 This project is an attempt to automate the creation of self-hosted services all the way from basic OS provisioning the basic OS to deploying the end-user applications.
 
 It project was inspired by [Khue's Homelab](https://github.com/khuedoan/homelab) and you should really check his project. While the end-goal is the same, I rely much more on Ansible, completely skip Terraform (at least for now) and try to not rely on external services. The only external services that I use are:
-- A DNS provider supported by (ExternalDNS)[https://github.com/kubernetes-sigs/external-dns]
-- (Let's Encrypt)[https://letsencrypt.org/] to generate certificates for external services
+- A DNS provider supported by [ExternalDNS](https://github.com/kubernetes-sigs/external-dns)
+- [Let's Encrypt](https://letsencrypt.org/) to generate certificates for external services
 
 # Architecture
 In addition to a Kubernetes cluster, I use FreeIPA to manage DNS and certificates for local services.
@@ -23,7 +23,7 @@ Below is a list of tentative features. Expectations will probably move along the
 - [ ] Basic internal application deployment
 - [ ] Automated DNS update for internal services
 - [ ] Automated certificate management for internal services
-- [ ] Coordinated reboot/upgrade of kubernetes machines using (airlock)[https://github.com/coreos/airlock]
+- [ ] Coordinated reboot/upgrade of kubernetes machines using [airlock](https://github.com/coreos/airlock)
 - [ ] Virtualized testing and development environment
 
 # Wouldn't have happened without them
