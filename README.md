@@ -7,4 +7,4 @@ It project was inspired by [Khue's Homelab](https://github.com/khuedoan/homelab)
 
 In addition to a Kubernetes cluster, I use FreeIPA to manage DNS and certificates for local services.
 
-![High-level diagram of the homelab](./homelab_schema.svg)
+![High-level diagram of the homelab](./homelab_schema.png)
