@@ -29,3 +29,5 @@ Below is a list of tentative features. Expectations will probably move along the
 # Wouldn't have happened without them
 I wouldn't be able to build this project if they hadn't published invaluable information on the different pieces of software that I use:
 - How to set up Dynamic DNS on FreeIPA for your Kubernetes Cluster: https://astrid.tech/2021/04/18/0/k8s-freeipa-dns/
+- ACME & FreeIPA – super easy: https://enotty.pipebreaker.pl/posts/2021/11/acme-freeipa-super-easy/
+- This Github thread on how to execute wipefs before the CoreOS installer starts: https://github.com/coreos/coreos-installer/issues/947
