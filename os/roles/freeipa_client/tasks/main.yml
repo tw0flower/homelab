@@ -32,7 +32,7 @@
   retries: 15
   delay: 10
   until: ipa_client_install_output.rc == 0 or ipa_client_install_output.rc == 3
-  register: ipa_client_install_output
+  register: ipa_client_install_output 
   changed_when: ipa_client_install_output.rc != 0 and ipa_client_install_output.rc != 3
   failed_when: ipa_client_install_output.rc not in [0, 1, 3]
 

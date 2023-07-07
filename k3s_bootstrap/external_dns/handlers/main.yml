@@ -1,0 +1,6 @@
+---
+# handlers file for k3s
+- name: Restart named
+  ansible.builtin.service:
+    name: named
+    state: restarted

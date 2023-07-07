@@ -82,6 +82,11 @@
     mode: "0644"
   notify: Restart k3s
 
+- name: Enable and start k3s service
+  ansible.builtin.service:
+    enabled: true
+    state: started
+
 - name: Flush handlers
   ansible.builtin.meta: flush_handlers
 

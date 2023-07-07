@@ -1,7 +1,42 @@
 ---
-- name: Install and start server for PXE boot locally
+- name: Bootstrap cert-manager
   hosts: localhost
   roles:
     - role: 'cert_manager'
   tags: 'cert_manager'
   vars_files: "../vars.yml"
+
+- name: Bootstrap external-dns
+  hosts: localhost
+  roles:
+    - role: 'external_dns'
+  tags: 'external_dns'
+  vars_files: "../vars.yml"
+
+- name: Bootstrap metallb
+  hosts: localhost
+  roles:
+    - role: metallb
+  tags: 'metallb'
+  vars_files: '../vars.yml'
+
+- name: Bootstrap ingress-nginx
+  hosts: localhost
+  roles:
+    - role: ingress_nginx
+  tags: 'ingress_nginx'
+  vars_files: '../vars.yml'
+
+- name: Bootstrap longhorn
+  hosts: localhost
+  roles:
+    - role: longhorn
+  tags: 'longhorn'
+  vars_files: '../vars.yml'
+
+# - name: Bootstrap argocd
+#   hosts: localhost
+#   roles:
+#     - role: 'argocd'
+#   tags: 'argocd'
+#   vars_files: "../vars.yml"

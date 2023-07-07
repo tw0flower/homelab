@@ -1,0 +1,48 @@
+- name: Add bitnami Helm repository
+  kubernetes.core.helm_repository:
+    repo_name: bitnami
+    repo_url: https://charts.bitnami.com/bitnami
+    kubeconfig: "{{ homelab_data_path }}/kubeconfig"
+
+- name: Install external-dns chart
+  kubernetes.core.helm:
+    name: external-dns
+    namespace: external-dns
+    chart_ref: bitnami/external-dns
+    create_namespace: true
+    release_values:
+      provider: rfc2136
+      logFormat: json
+      domainFilters:
+        - "{{ k3s_zone }}"
+      rfc2136:
+        host: "{{ groups['freeipa'][0] }}.{{ ipaserver_domain }}"
+        zone: "{{ k3s_zone }}"
+        tsigKeyname: k3s
+        tsigSecretAlg: hmac-sha512
+        secretName: freeipa-rfc2136
+    kubeconfig: "{{ homelab_data_path }}/kubeconfig"
+
+- name: Retrieve the TSIG key from the FreeIPA server
+  ansible.builtin.slurp:
+    src: /etc/named/ipa-ext.conf
+  register: k3s_tsig_conf
+  delegate_to: "{{ groups['freeipa'][0] }}"
+  become: true
+
+- ansible.builtin.debug:
+    msg: "{{ k3s_tsig_conf.content | b64decode | regex_findall('.*secret \"(.*)\";') | first }}"
+
+- name: Create rf2136 tsig secret
+  kubernetes.core.k8s:
+    kubeconfig: "{{ homelab_data_path }}/kubeconfig"
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: freeipa-rfc2136
+        namespace: external-dns
+      type: Opaque
+      stringData:
+        # replace with your secret
+        rfc2136_tsig_secret: "{{ k3s_tsig_conf.content | b64decode | regex_findall('.*secret \"(.*)\";') | first }}"
