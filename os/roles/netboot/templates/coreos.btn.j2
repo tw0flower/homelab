@@ -2,26 +2,37 @@ variant: fcos
 version: 1.5.0
 storage:
   disks:
-  - device: /dev/disk/by-id/coreos-boot-disk
-    partitions:
-    - number: 4
-      label: root
-      size_mib: 10240
-      resize: true
-    - label: swap
-      size_mib: {{ netboot_swap_size}}
-    - size_mib: 0
-      label: var
+    - device: {{ hostvars[item]['os_dev'] }}
+      partitions:
+      - number: 4
+        label: root
+        size_mib: 10240
+        resize: true
+      - label: swap
+        size_mib: {{ netboot_swap_size}}
+      - size_mib: 0
+        label: var
+{% if hostvars[item]['data_dev'] is defined %}
+    - device: {{ hostvars[item]['data_dev'] }}
+      partitions:
+      - label: data
+        size_mib: 0
+        resize: true
+{% endif %}
   filesystems:
     - device: /dev/disk/by-partlabel/var
       path: /var
       format: ext4
       with_mount_unit: true
-      wipe_filesystem: true
     - device: /dev/disk/by-partlabel/swap
       format: swap
-      wipe_filesystem: true
       with_mount_unit: true
+{% if hostvars[item]['data_dev'] is defined %}
+    - device: /dev/disk/by-partlabel/data
+      format: ext4
+      path: /var/data
+      with_mount_unit: true
+{% endif %}
 passwd:
   users:
     - name: ansible

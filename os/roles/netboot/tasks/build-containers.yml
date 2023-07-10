@@ -19,12 +19,6 @@
     build:
       extra_args: --cap-add=NET_ADMIN,NET_RAW
 
-- name: Copy dynamic iPXE application to data directory
-  ansible.builtin.copy:
-    src: files/dynamic_ipxe
-    dest: "{{ homelab_data_path }}/{{ netboot_data_path }}"
-    mode: "0600"
-
 - name: Build dynamic iPXE image
   containers.podman.podman_image:
     name: dynamic_ipxe

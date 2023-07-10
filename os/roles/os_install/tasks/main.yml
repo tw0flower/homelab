@@ -8,8 +8,15 @@
 - name: Wait for system to become reachable
   ansible.builtin.wait_for_connection:
     timeout: "{{ os_install_host_wait_timeout }}"
-    connect_timeout: 30
+    connect_timeout: 5
     delay: 0
+    sleep: 15
   vars:
     ansible_host_key_checking: false
   ignore_unreachable: true
+
+- name: Enable ACME on FreeIPA
+  ansible.builtin.command:
+    cmd: ipa-acme-manage enable
+  register: ipa_acme_enable_output
+  changed_when: ipa_acme_enable_output.rc == 0

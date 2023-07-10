@@ -82,8 +82,16 @@
     mode: "0644"
   notify: Restart k3s
 
-- name: Enable and start k3s service
+- name: Enable and start k3s initial server
   ansible.builtin.service:
+    name: k3s
+    enabled: true
+    state: started
+  delegate_to: "{{ groups['servers'][0] }}"
+
+- name: Enable and start k3s on other nodes
+  ansible.builtin.service:
+    name: k3s
     enabled: true
     state: started
 

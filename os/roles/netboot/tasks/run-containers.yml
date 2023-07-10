@@ -36,22 +36,3 @@
     recreate: true
     force_restart: true
     state: started
-
-- name: Start dynamic iPXE container
-  containers.podman.podman_container:
-    name: homelab_dynamic_ipxe
-    volumes:
-      - '{{ homelab_data_path }}/{{ netboot_data_path }}/dynamic_ipxe/config.py:/dynamic_ipxe/config.py:Z'
-      - '{{ homelab_data_path }}/{{ netboot_data_path }}/dynamic_ipxe/boot_config:/dynamic_ipxe/boot_config:Z'
-    image: localhost/dynamic_ipxe
-    env:
-      DYN_IPXE_CONFIG_MODULE: homelab_dynamic_ipxe_config
-    cap_add:
-      - NET_ADMIN
-      - NET_RAW
-    network: host
-    ports:
-      - 8000:8000
-    recreate: true
-    force_restart: true
-    state: started

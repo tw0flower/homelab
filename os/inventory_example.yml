@@ -2,13 +2,13 @@ metal:
   children:
     freeipa:
       hosts:
-        freeipa_master: {ansible_host: 192.168.1.110, mac: '00:23:24:d1:f5:69'}
+        freeipa_master: {ansible_host: 192.168.1.110, mac: '00:23:24:d1:f5:69', os_dev: '/dev/sda'}
     kubernetes:
       children:
         masters:
           hosts:
-            k3s_master1: {ansible_host: 192.168.1.110, mac: '00:23:24:d1:f5:69'}
-            k3s_master2: {ansible_host: 192.168.1.110, mac: '00:23:24:d1:f5:69'}
+            k3s_master1: {ansible_host: 192.168.1.111, mac: '00:23:24:d1:f5:69', os_dev: '/dev/nvme0n1'}
+            k3s_master2: {ansible_host: 192.168.1.112, mac: '00:23:24:d1:f5:69', os_dev: '/dev/nvme0n1'}
         workers:
           hosts:
-            k3s_worker1: {ansible_host: 192.168.1.113, mac: '00:23:24:d1:f4:d6'}
+            k3s_worker1: {ansible_host: 192.168.1.113, mac: '00:23:24:d1:f4:d6', os_dev: '/dev/nvme0n1'}

@@ -1,31 +1,43 @@
 ---
+# - name: Warn if disks are going to be wiped
+#   ansible.builtin.debug:
+#     msg: |
+#       ###################################################################
+#       # ATTENTION PLEASE, POTENTIAL DATA LOSS AHEAD                     #
+#       #                                                                 #
+#       # You have configured the wipe_os and/or wipe_data variables.     #
+#       # This command will wipe entire disks and you will lose all data  #
+#       # on them.                                                        #
+#       #                                                                 #
+#       # PLEASE NOTE THAT SOME DATA WILL BE LOST EVEN IF ONLY WIPE_OS IS #
+#       # DEFINED                                                         #
+#       #                                                                 #
+#       # If you are unsure about what you're doing, press Ctrl+C now to  #
+#       # stop the process                                                #
+#       ###################################################################
+#   when: hostvars[item][wipe_os] is defined and hostvars[item][wipe_os] or
+#         hostvars[item][wipe_data] is defined and hostvars[item][wipe_data]
+#   loop: "{{ groups['all'] }}"
+
 - name: Copy iPXE boot image to container's data directory
   ansible.builtin.copy:
     src: "{{ homelab_data_path }}/{{ netboot_data_path }}/ipxe/src/bin-x86_64-efi/ipxe.efi"
     dest: "{{ homelab_data_path }}/{{ netboot_data_path }}/kickstart/"
     mode: "0664"
 
-- name: Create dynamic iPXE application configuration directory
-  ansible.builtin.file:
-    path: "{{ homelab_data_path }}/{{ netboot_data_path }}/dynamic_ipxe/boot_config"
-    state: directory
-    recurse: true
-
-- name: Copy dynamic iPXE configuration application configuration file
-  ansible.builtin.copy:
-    src: "files/homelab_dynamic_ipxe_config.py"
-    dest: "{{ homelab_data_path }}/{{ netboot_data_path }}/dynamic_ipxe/homelab_dynamic_ipxe_config.py"
-    mode: "0600"
-
-- name: Copy dynamic iPXE application boot configuration files
+- name: Copy iPXE boot configuration for CoreOS servers
   ansible.builtin.template:
-    src: "{{ item.key }}"
-    dest: "{{ homelab_data_path }}/{{ netboot_data_path }}/dynamic_ipxe/{{ item.value }}"
-    mode: "0600"
-  with_dict:
-    boot_install_coreos.ipxe.j2: boot_config/boot_install_coreos.ipxe
-    boot_install_rocky.ipxe.j2: boot_config/boot_install_rocky.ipxe
-    homelab_mac_association.yml.j2: homelab_mac_association.yml
+    src: boot_install_coreos.ipxe.j2
+    dest: "{{ homelab_data_path }}/{{ netboot_data_path }}/kickstart/{{ hostvars[item]['mac'] }}.ipxe"
+    mode: "0644"
+  loop: "{{ groups['kubernetes'] }}"
+
+- name: Copy iPXE boot configuration for FreeIPA servers
+  ansible.builtin.template:
+    src: "boot_install_rocky.ipxe.j2"
+    dest: "{{ homelab_data_path }}/{{ netboot_data_path }}/kickstart/{{ hostvars[item]['mac'] }}.ipxe"
+    mode: "0644"
+  loop: "{{ groups['freeipa'] }}"
 
 - name: Create kickstart files for each FreeIPA machine
   ansible.builtin.template:
@@ -41,11 +53,12 @@
     mode: "0644"
   loop: "{{ query('inventory_hostnames', 'kubernetes') }}"
 
-- name: Create ignition configuration for the installer
+- name: Create ignition installation configuration for each CoreOS machine
   ansible.builtin.template:
     src: "install.btn.j2"
-    dest: "{{ homelab_data_path }}/{{ netboot_data_path }}/kickstart/install.btn"
+    dest: "{{ homelab_data_path }}/{{ netboot_data_path }}/kickstart/{{ hostvars[item]['mac'] }}_install.btn"
     mode: "0644"
+  loop: "{{ query('inventory_hostnames', 'kubernetes') }}"
 
 - name: Convert all Butane files to ignition
   ansible.builtin.command:

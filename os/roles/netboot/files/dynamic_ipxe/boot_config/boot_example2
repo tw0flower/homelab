@@ -1,6 +1,0 @@
-#!ipxe
-  
-dhcp
-initrd http://192.168.0.1/images/pxeboot/initrd.img
-kernel http://192.168.0.1/images/pxeboot/vmlinuz inst.repo=http://192.168.0.1 inst.ks=http://192.168.0.1/metal2.ks quiet
-boot

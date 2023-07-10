@@ -8,10 +8,13 @@ storage:
         inline: |
           #!/usr/bin/bash
           set -euxo pipefail
-          boot_device="$(sed -nE 's,.+ coreos\.inst\.install_dev=([^ ]+).*,\1,p' /proc/cmdline)"
           # wipe the boot disk.
-          wipefs --all $boot_device
-          #blkdiscard $boot_device
+{% if hostvars[item]['wipe_os'] | default(false) %}
+          wipefs --all {{ hostvars[item]['os_dev'] }}
+{% endif %}
+{% if hostvars[item]['wipe_data'] | default(false) %}
+          wipefs --all {{ hostvars[item]['data_dev'] }}
+{% endif %}
 systemd:
   units:
     - name: live-pre-install.service
