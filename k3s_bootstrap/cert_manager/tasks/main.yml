@@ -8,6 +8,7 @@
 - name: Deploy latest version of cert-manager
   kubernetes.core.helm:
     name: cert-manager
+    wait: true
     chart_ref: jetstack/cert-manager
     create_namespace: true
     release_namespace: cert-manager
@@ -22,6 +23,7 @@
 - name: Deploy latest version of trust-manager
   kubernetes.core.helm:
     name: trust-manager
+    wait: true
     chart_ref: jetstack/trust-manager
     release_namespace: cert-manager
     kubeconfig: "{{ homelab_data_path }}/kubeconfig"

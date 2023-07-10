@@ -1,18 +1,4 @@
 ---
-- name: Bootstrap cert-manager
-  hosts: localhost
-  roles:
-    - role: 'cert_manager'
-  tags: 'cert_manager'
-  vars_files: "../vars.yml"
-
-- name: Bootstrap external-dns
-  hosts: localhost
-  roles:
-    - role: 'external_dns'
-  tags: 'external_dns'
-  vars_files: "../vars.yml"
-
 - name: Bootstrap metallb
   hosts: localhost
   roles:
@@ -27,6 +13,20 @@
   tags: 'ingress_nginx'
   vars_files: '../vars.yml'
 
+- name: Bootstrap external-dns
+  hosts: localhost
+  roles:
+    - role: 'external_dns'
+  tags: 'external_dns'
+  vars_files: "../vars.yml"
+
+- name: Bootstrap cert-manager
+  hosts: localhost
+  roles:
+    - role: 'cert_manager'
+  tags: 'cert_manager'
+  vars_files: "../vars.yml"
+
 - name: Bootstrap longhorn
   hosts: localhost
   roles:
@@ -34,9 +34,16 @@
   tags: 'longhorn'
   vars_files: '../vars.yml'
 
-# - name: Bootstrap argocd
-#   hosts: localhost
-#   roles:
-#     - role: 'argocd'
-#   tags: 'argocd'
-#   vars_files: "../vars.yml"
+- name: Bootstrap Vault
+  hosts: localhost
+  roles:
+    - role: 'vault'
+  tags: 'vault'
+  vars_files: "../vars.yml"
+
+- name: Bootstrap argocd
+  hosts: localhost
+  roles:
+    - role: 'argocd'
+  tags: 'argocd'
+  vars_files: "../vars.yml"

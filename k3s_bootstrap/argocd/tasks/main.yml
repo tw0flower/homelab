@@ -1,22 +1,70 @@
 ---
-- name: Create TLS certificates for ArgoCD
-  kubernetes.core.k8s:
-    definition:
-      apiVersion: cert-manager.io/v1
-      kind: Certificate
-      metadata:
-        name: argocd-server-tls
-        namespace: argocd
-      spec:
-        secretName: argocd-server-tls
-        duration: 2160h
-        renewBefore: 360h
-        subject:
-          organizations:
-            - argocd
-        dnsNames:
-          - argocd.{{ ipaserver_domain }}
-        issuerRef:
-          name: internal-acme-issuer
-          kind: ClusterIssuer
+- name: Add ArgoCD Helm repository
+  kubernetes.core.helm_repository:
     kubeconfig: "{{ homelab_data_path }}/kubeconfig"
+    url: https://argoproj.github.io/argo-helm
+    name: argocd
+
+- name: Install ArgoCD chart
+  kubernetes.core.helm:
+    kubeconfig: "{{ homelab_data_path }}/kubeconfig"
+    wait: true
+    chart_ref: argocd/argo-cd
+    release_namespace: argocd
+    release_name: argocd
+    create_namespace: true
+
+- name: Create Ingress for ArgoCD
+  kubernetes.core.k8s:
+    kubeconfig: "{{ homelab_data_path }}/kubeconfig"
+    definition:
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: argocd-server-ingress
+        namespace: argocd
+        annotations:
+          nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+          nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+          cert-manager.io/cluster-issuer: internal-acme-issuer
+          external-dns.alpha.kubernetes.io/hostname: argocd.{{ k3s_zone }}
+          nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+      spec:
+        ingressClassName: "nginx"
+        rules:
+          - host: argocd.{{ k3s_zone }}
+            http:
+              paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: argocd-server
+                      port:
+                        name: https
+        tls:
+          - hosts:
+              - argocd.{{ k3s_zone }}
+            secretName: argocd-secret
+
+# - name: Create TLS certificates for ArgoCD
+#   kubernetes.core.k8s:
+#     definition:
+#       apiVersion: cert-manager.io/v1
+#       kind: Certificate
+#       metadata:
+#         name: argocd-server-tls
+#         namespace: argocd
+#       spec:
+#         secretName: argocd-server-tls
+#         duration: 2160h
+#         renewBefore: 360h
+#         subject:
+#           organizations:
+#             - argocd
+#         dnsNames:
+#           - argocd.{{ ipaserver_domain }}
+#         issuerRef:
+#           name: internal-acme-issuer
+#           kind: ClusterIssuer
+#     kubeconfig: "{{ homelab_data_path }}/kubeconfig"

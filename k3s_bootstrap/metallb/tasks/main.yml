@@ -7,6 +7,7 @@
 - name: Install metallb on the cluster
   kubernetes.core.helm:
     name: metallb
+    wait: true
     chart_ref: metallb/metallb
     release_namespace: metallb-system
     create_namespace: true

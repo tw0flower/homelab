@@ -7,6 +7,7 @@
 - name: Install external-dns chart
   kubernetes.core.helm:
     name: external-dns
+    wait: true
     namespace: external-dns
     chart_ref: bitnami/external-dns
     create_namespace: true
@@ -30,10 +31,7 @@
   delegate_to: "{{ groups['freeipa'][0] }}"
   become: true
 
-- ansible.builtin.debug:
-    msg: "{{ k3s_tsig_conf.content | b64decode | regex_findall('.*secret \"(.*)\";') | first }}"
-
-- name: Create rf2136 tsig secret
+- name: Create rfc2136 tsig secret
   kubernetes.core.k8s:
     kubeconfig: "{{ homelab_data_path }}/kubeconfig"
     definition:

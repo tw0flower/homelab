@@ -7,6 +7,7 @@
 - name: Install Longhorn on the cluster
   kubernetes.core.helm:
     name: longhorn
+    wait: true
     chart_ref: longhorn/longhorn
     release_namespace: longhorn-system
     create_namespace: true

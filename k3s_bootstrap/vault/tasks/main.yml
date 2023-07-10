@@ -1,0 +1,54 @@
+---
+- name: Add Hashicorp Helm repository
+  kubernetes.core.helm_repository:
+    kubeconfig: "{{ homelab_data_path }}/kubeconfig"
+    url: https://helm.releases.hashicorp.com
+    name: hashicorp
+
+- name: Install Vault chart
+  kubernetes.core.helm:
+    kubeconfig: "{{ homelab_data_path }}/kubeconfig"
+    chart_ref: hashicorp/vault
+    release_namespace: vault
+    name: vault
+    create_namespace: true
+    wait: true
+    values:
+      injector:
+        enabled: true
+        image:
+          repository: "hashicorp/vault-k8s"
+          tag: "latest"
+      ui:
+        enabled: true
+        serviceType: "LoadBalancer"
+        serviceNodePort: null
+        externalPort: 8200
+
+- name: Initialize Vault
+  kubernetes.core.k8s_exec:
+    kubeconfig: "{{ homelab_data_path }}/kubeconfig"
+    namespace: vault
+    pod: vault-0
+    command: vault operator init
+  register: vault_operator_init
+  failed_when: vault_operator_init.rc not in [ 0, 2 ]
+  retries: 12
+  delay: 5
+  until: vault_operator_init is not failed
+
+- name: Save unseal vault keys
+  ansible.builtin.copy:
+    dest: "{{ homelab_data_path }}/passwords/vault_unseal_keys"
+    mode: "0600"
+    content: "{{ vault_operator_init }}"
+  when: vault_operator_init.rc == 0
+
+- name: Unseal vault
+  kubernetes.core.k8s_exec:
+    kubeconfig: "{{ homelab_data_path }}/kubeconfig"
+    namespace: vault
+    pod: vault-0
+    command: "vault operator unseal {{ item | regex_search('^Unseal Key [0-9]: (.*)', '\\1') | first }}"
+  loop: "{{  vault_operator_init.stdout_lines[:3] }}"
+  when: vault_operator_init.rc == 0
