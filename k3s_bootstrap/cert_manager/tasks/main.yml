@@ -65,7 +65,6 @@
           configMap:
             key: "ca-bundle-ipa.pem"
           namespaceSelector:
-
     apply: true
     kubeconfig: "{{ homelab_data_path }}/kubeconfig"
 
