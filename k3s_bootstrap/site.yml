@@ -41,6 +41,13 @@
   tags: 'vault'
   vars_files: "../vars.yml"
 
+- name: Bootstrap Keycloak
+  hosts: localhost
+  roles:
+    - role: 'keycloak'
+  tags: 'keycloak'
+  vars_files: "../vars.yml"
+
 - name: Bootstrap argocd
   hosts: localhost
   roles:

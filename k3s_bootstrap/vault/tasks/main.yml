@@ -14,6 +14,8 @@
     create_namespace: true
     wait: true
     values:
+      auditStorage:
+        enabled: true
       tlsDisable: false
       certs:
         secretName: vault-tls
