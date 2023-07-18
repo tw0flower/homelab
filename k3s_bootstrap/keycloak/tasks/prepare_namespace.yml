@@ -40,16 +40,6 @@
               - keycloak.{{ k3s_zone }}
             secretName: keycloak-tls-cert
 
-- name: Get Vault root token from file
-  ansible.builtin.slurp:
-    path: "{{ homelab_data_path }}/passwords/vault_root_token"
-  register: vault_token_b64
-
-- name: Decode Vault root token
-  ansible.builtin.set_fact:
-    ansible_hashi_vault_token: "{{ vault_token_b64.content | b64decode }}"
-    ansible_hashi_vault_url: "https://vault.{{ k3s_zone }}"
-
 - name: Check if the Keycloak Admin password already exists
   ansible.builtin.set_fact:
     keycloak_admin_pwd: "{{ lookup('community.hashi_vault.hashi_vault',

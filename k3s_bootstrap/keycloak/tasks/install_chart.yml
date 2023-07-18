@@ -1,0 +1,84 @@
+- name: Ensure that Bitnami repository is present
+  kubernetes.core.helm_repository:
+    url: https://charts.bitnami.com/bitnami
+    name: bitnami
+
+- name: Get Keycloak PostgreSQL password from Vault
+  ansible.builtin.set_fact:
+    keycloak_postgres_password: "{{ lookup('community.hashi_vault.hashi_vault', 'secret=kvv2/data/keycloak/postgres_password:password validate_certs=False') }}"
+
+- name: Get Keycloak admin password from Vault
+  ansible.builtin.set_fact:
+    keycloak_admin_password: "{{ lookup('community.hashi_vault.hashi_vault', 'secret=kvv2/data/keycloak/admin_password:pwd validate_certs=False') }}"
+
+- name: Check if Keycloak chart is already deployed
+  kubernetes.core.helm_info:
+    release_name: keycloak
+    release_namespace: keycloak
+    kubeconfig: "{{ homelab_data_path }}/kubeconfig"
+  register: keycloak_chart_info
+
+- name: Install Keycloak on the cluster
+  kubernetes.core.helm:
+    name: keycloak
+    chart_ref: bitnami/keycloak
+    release_namespace: keycloak
+    create_namespace: true
+    kubeconfig: "{{ homelab_data_path }}/kubeconfig"
+    release_values:
+      tls:
+        enabled: true
+        usePem: true
+        existingSecret: keycloak-tls-cert
+      auth:
+        adminUser: admin
+        existingSecret: keycloak-admin-password
+        passwordSecretKey: pwd
+      postgresql:
+        auth:
+          existingSecret: keycloak-postgres-password
+      production: true
+      serviceAccount:
+        name: keycloak-service-account
+  when: keycloak_chart_info.status is not defined
+
+- name: Create admin password VaultStaticSecret
+  kubernetes.core.k8s:
+    kubeconfig: "{{ homelab_data_path }}/kubeconfig"
+    definition:
+      apiVersion: secrets.hashicorp.com/v1beta1
+      kind: VaultStaticSecret
+      metadata:
+        name: vault-kv-keycloak-admin-password
+        namespace: keycloak
+      spec:
+        type: kv-v2
+        mount: kvv2
+        path: keycloak/admin_password
+
+        destination:
+          name: keycloak-admin-password
+          create: true
+
+        refreshAfter: 30s
+
+        vaultAuthRef: static-auth-keycloak
+
+- name: Create postgres password VaultStaticSecret
+  kubernetes.core.k8s:
+    kubeconfig: "{{ homelab_data_path }}/kubeconfig"
+    definition:
+      apiVersion: secrets.hashicorp.com/v1beta1
+      kind: VaultStaticSecret
+      metadata:
+        name: vault-kv-keycloak-postgres-password
+        namespace: keycloak
+      spec:
+        type: kv-v2
+        mount: kvv2
+        path: keycloak/postgres_password
+        destination:
+          name: keycloak-postgres-password
+          create: true
+        refreshAfter: 30s
+        vaultAuthRef: static-auth-keycloak

@@ -1,0 +1,75 @@
+---
+- name: Ensure that the user realms exists
+  community.general.keycloak_realm:
+    auth_keycloak_url: "https://keycloak.{{ k3s_zone }}"
+    auth_client_id: admin-cli
+    auth_realm: master
+    auth_username: admin
+    auth_password: "{{ lookup('community.hashi_vault.hashi_vault',
+                              'secret=kvv2/data/keycloak/admin_password:pwd validate_certs=False') }}"
+    id: users
+    realm: users
+    state: present
+    validate_certs: false
+
+- name: Check if the Keycloak LDAP password exists in Vault
+  ansible.builtin.set_fact:
+    keycloak_admin_pwd: "{{ lookup('community.hashi_vault.hashi_vault',
+                                      'secret=kvv2/data/keycloak/ldap_password validate_certs=False') }}"
+  register: check_keycloak_ldap_password
+  ignore_errors: true
+
+- name: Create Keycloak LDAP password in Vault
+  community.hashi_vault.vault_kv2_write:
+    token: "{{ ansible_hashi_vault_token }}"
+    url: https://vault.{{ k3s_zone }}
+    validate_certs: false
+    path: keycloak/ldap_password
+    engine_mount_point: "kvv2"
+    data:
+      password: "{{ lookup('community.general.random_string', length=20, special=false) }}"
+  when: check_keycloak_ldap_password is failed
+
+- name: Split internal domain in list
+  ansible.builtin.set_fact:
+    ipaserver_domain_list: "{{ ipaserver_domain | split('.') }}"
+
+- name: Ensure Keycloak LDAP account exists on the FreeIPA server (https://freeipa.org/page/HowTo/LDAP)
+  community.general.ldap_entry:
+    server_uri: ldaps://{{ groups["freeipa"][0] }}.{{ ipaserver_domain }}
+    dn: "uid=keycloak,cn=sysaccounts,cn=etc,{{ ['dc='] | product(ipaserver_domain_list) | map('join') | join(',') }}"
+    bind_dn: uid=admin,cn=users,cn=accounts,{{ ['dc='] | product(ipaserver_domain_list) | map('join') | join(',') }}
+    bind_pw: "{{ lookup('ansible.builtin.password', homelab_data_path + '/' + 'passwords' + '/' + 'ipaadmin_password', length=15) }}"
+    validate_certs: false
+    objectClass:
+      - account
+      - simplesecurityobject
+    attributes:
+      uid: keycloak
+      userPassword: "{{ lookup('community.hashi_vault.hashi_vault',
+                               'secret=kvv2/data/keycloak/ldap_password:password validate_certs=False') }}"
+      passwordExpirationTime: "{{  '%Y%m%d%H%M%SZ' | strftime((ansible_date_time.epoch | int) + (31536000*10)) }}"
+      nsIdleTimeout: 0
+
+- name: Connect Keycloak to FreeIPA
+  community.general.keycloak_user_federation:
+    auth_keycloak_url: "https://keycloak.{{ k3s_zone }}"
+    auth_client_id: admin-cli
+    auth_realm: master
+    auth_username: admin
+    auth_password: "{{ lookup('community.hashi_vault.hashi_vault',
+                              'secret=kvv2/data/keycloak/admin_password:pwd validate_certs=False') }}"
+    validate_certs: false
+    realm: users
+    name: FreeIPA
+    provider_id: ldap
+    config:
+      bindCredential: "{{ lookup('community.hashi_vault.hashi_vault',
+                                 'secret=kvv2/data/keycloak/ldap_password:password validate_certs=False') }}"
+      bindDn: "uid=keycloak,cn=sysaccounts,cn=etc,{{ ['dc='] | product(ipaserver_domain_list) | map('join') | join(',') }}"
+      connectionUrl: ldap://{{ groups["freeipa"][0] }}.{{ ipaserver_domain }}
+      editMode: "READ_ONLY"
+      usernameLDAPAttribute: uid
+      userObjectClasses: "inetuser"
+      usersDn: "cn=users,cn=accounts,{{ ['dc='] | product(ipaserver_domain_list) | map('join') | join(',') }}"
+      vendor: other
