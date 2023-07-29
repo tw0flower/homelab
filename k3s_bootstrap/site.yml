@@ -1,4 +1,11 @@
 ---
+- name: Setup FreeIPA
+  hosts: localhost
+  roles:
+    - role: freeipa
+  tags: 'freeipa'
+  vars_files: '../vars.yml'
+
 - name: Bootstrap metallb
   hosts: localhost
   roles:

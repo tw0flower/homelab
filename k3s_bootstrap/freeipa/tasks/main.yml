@@ -1,0 +1,16 @@
+---
+- name: Add sysadmin group to FreeIPA
+  community.general.ipa_group:
+    ipa_host: "{{ groups['freeipa'][0] }}.{{ ipaserver_domain }}"
+    ipa_pass: "{{ lookup('ansible.builtin.password', homelab_data_path + '/' + 'passwords' + '/' + 'ipaadmin_password', length=15) }}"
+    validate_certs: false
+    state: present
+    name: sysadmins
+
+- name: Add nas_enjoyer group to FreeIPA
+  community.general.ipa_group:
+    ipa_host: "{{ groups['freeipa'][0] }}.{{ ipaserver_domain }}"
+    ipa_pass: "{{ lookup('ansible.builtin.password', homelab_data_path + '/' + 'passwords' + '/' + 'ipaadmin_password', length=15) }}"
+    validate_certs: false
+    state: present
+    name: nas_enjoyers

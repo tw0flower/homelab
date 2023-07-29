@@ -48,7 +48,7 @@
       uid: keycloak
       userPassword: "{{ lookup('community.hashi_vault.hashi_vault',
                                'secret=kvv2/data/keycloak/ldap_password:password validate_certs=False') }}"
-      passwordExpirationTime: "{{  '%Y%m%d%H%M%SZ' | strftime((ansible_date_time.epoch | int) + (31536000*10)) }}"
+      passwordExpirationTime: "{{ '%Y%m%d%H%M%SZ' | strftime((ansible_date_time.epoch | int) + (31536000 * 10)) }}"
       nsIdleTimeout: 0
 
 - name: Connect Keycloak to FreeIPA
@@ -73,3 +73,16 @@
       userObjectClasses: "inetuser"
       usersDn: "cn=users,cn=accounts,{{ ['dc='] | product(ipaserver_domain_list) | map('join') | join(',') }}"
       vendor: other
+    mappers:
+      - name: group
+        providerId: group-ldap-mapper
+        providerType: "org.keycloak.storage.ldap.mappers.LDAPStorageMapper"
+        config:
+          memberof.ldap.attribute: memberOf
+          membership.attribute.type: DN
+          membership.ldap.attribute: member
+          membership.user.ldap.attribute: uid
+          mode: READ_ONLY
+          user.roles.retrieve.strategy: GET_GROUPS_BY_MEMBEROF_ATTRIBUTE
+          default.ldap.groups.path: /
+          groups.dn: cn=groups,cn=accounts,dc=int,dc=ankhmorpork,dc=host
