@@ -1,9 +1,37 @@
 ---
+- name: Get Vault root token from file
+  ansible.builtin.slurp:
+    path: "{{ homelab_data_path }}/passwords/vault_root_token"
+  register: vault_token_b64
+
+- name: Decode Vault root token
+  ansible.builtin.set_fact:
+    ansible_hashi_vault_token: "{{ vault_token_b64.content | b64decode }}"
+    ansible_hashi_vault_url: "https://vault.{{ k3s_zone }}"
+
 - name: Add ArgoCD Helm repository
   kubernetes.core.helm_repository:
     kubeconfig: "{{ homelab_data_path }}/kubeconfig"
     url: https://argoproj.github.io/argo-helm
     name: argocd
+
+- name: Check if the ArgoCD admin password exists in Vault
+  ansible.builtin.set_fact:
+    keycloak_admin_pwd: "{{ lookup('community.hashi_vault.hashi_vault',
+                                      'secret=kvv2/data/argocd/admin_password validate_certs=False') }}"
+  register: check_argocd_admin_password
+  ignore_errors: true
+
+- name: Create ArgoCD admin password in Vault
+  community.hashi_vault.vault_kv2_write:
+    token: "{{ ansible_hashi_vault_token }}"
+    url: https://vault.{{ k3s_zone }}
+    validate_certs: false
+    path: argocd/admin_password
+    engine_mount_point: "kvv2"
+    data:
+      password: "{{ lookup('community.general.random_string', length=20, special=false) }}"
+  when: check_argocd_admin_password is failed
 
 - name: Install ArgoCD chart
   kubernetes.core.helm:
@@ -13,6 +41,11 @@
     release_namespace: argocd
     release_name: argocd
     create_namespace: true
+    values:
+      configs:
+        secret:
+          argocdServerAdminPassword: "{{ lookup('community.hashi_vault.hashi_vault',
+                                                'secret=kvv2/data/argocd/admin_password validate_certs=False')['password'] | password_hash('bcrypt') }}"
 
 - name: Create Ingress for ArgoCD
   kubernetes.core.k8s:
