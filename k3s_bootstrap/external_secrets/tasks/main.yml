@@ -1,0 +1,63 @@
+---
+- name: Ensure the external-secrets Helm repository exists
+  kubernetes.core.helm_repository:
+    kubeconfig: "{{ homelab_data_path }}/kubeconfig"
+    name: external-secrets
+    url: https://charts.external-secrets.io
+
+- name: Deploy the external-secrets Helm chart
+  kubernetes.core.helm:
+    kubeconfig: "{{ homelab_data_path }}/kubeconfig"
+    name: external-secrets
+    chart_ref: external-secrets/external-secrets
+    namespace: external-secrets
+    create_namespace: true
+
+- name: Get Vault root token from file
+  ansible.builtin.slurp:
+    path: "{{ homelab_data_path }}/passwords/vault_root_token"
+  register: vault_token_b64
+
+- name: Decode Vault root token
+  ansible.builtin.set_fact:
+    ansible_hashi_vault_token: "{{ vault_token_b64.content | b64decode }}"
+    ansible_hashi_vault_url: "https://vault.{{ k3s_zone }}"
+
+- name: Create the Vault token secret
+  kubernetes.core.k8s:
+    kubeconfig: "{{ homelab_data_path }}/kubeconfig"
+    namespace: external-secrets
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: vault-token
+      data:
+        token: "{{ vault_token_b64.content }}"
+
+- name: Retrieve CA bundle from local file
+  ansible.builtin.slurp:
+    src: "{{ homelab_data_path }}/ca-bundle.crt"
+  register: ca_bundle
+
+- name: Create the Vault ClusterSecretStore
+  kubernetes.core.k8s:
+    kubeconfig: "{{ homelab_data_path }}/kubeconfig"
+    namespace: external-secrets
+    definition:
+      apiVersion: external-secrets.io/v1beta1
+      kind: ClusterSecretStore
+      metadata:
+        name: vault-backend
+      spec:
+        provider:
+          vault:
+            caBundle: "{{ ca_bundle.content }}"
+            server: "{{ ansible_hashi_vault_url }}"
+            path: "secret"
+            version: "v2"
+            auth:
+              tokenSecretRef:
+                name: "vault-token"
+                key: "token"
+                namespace: external-secrets

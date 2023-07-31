@@ -48,6 +48,13 @@
   tags: 'vault'
   vars_files: "../vars.yml"
 
+- name: Setup external-secrets
+  hosts: localhost
+  roles:
+    - role: external_secrets
+  tags: 'external_secrets'
+  vars_files: '../vars.yml'
+
 - name: Bootstrap Keycloak
   hosts: localhost
   roles:
