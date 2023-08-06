@@ -9,6 +9,56 @@
     ansible_hashi_vault_token: "{{ vault_token_b64.content | b64decode }}"
     ansible_hashi_vault_url: "https://vault.{{ k3s_zone }}"
 
+- name: Ensure groups client scope exists
+  community.general.keycloak_clientscope:
+    auth_keycloak_url: "https://keycloak.{{ k3s_zone }}"
+    auth_client_id: admin-cli
+    auth_realm: master
+    auth_username: admin
+    auth_password: "{{ lookup('community.hashi_vault.hashi_vault',
+                              'secret=kvv2/data/keycloak/admin_password:pwd validate_certs=False') }}"
+    validate_certs: false
+    realm: users
+    name: groups
+    protocol: "openid-connect"
+    protocol_mappers:
+      - config:
+          access.token.claim: true
+          claim.name: "groups"
+          full.path: false
+          id.token.claim: true
+          userinfo.token.claim: true
+        name: groups
+        protocol: openid-connect
+        protocolMapper: oidc-group-membership-mapper
+
+- name: Ensure ArgoCD's Keycloak client exists
+  community.general.keycloak_client:
+    auth_keycloak_url: "https://keycloak.{{ k3s_zone }}"
+    auth_client_id: admin-cli
+    auth_realm: master
+    auth_username: admin
+    auth_password: "{{ lookup('community.hashi_vault.hashi_vault',
+                              'secret=kvv2/data/keycloak/admin_password:pwd validate_certs=False') }}"
+    realm: users
+    name: argocd
+    client_id: argocd
+    protocol: openid-connect
+    root_url: "https://argocd.{{ k3s_zone }}"
+    validate_certs: false
+    public_client: true
+    default_client_scopes:
+      - "acr"
+      - "email"
+      - "profile"
+      - "roles"
+      - "web-origins"
+      - "groups"
+      - "offline_access"
+    redirect_uris:
+      - "https://argocd.{{ k3s_zone }}/auth/callback"
+  register: keycloak_argocd_client
+
 - name: Add ArgoCD Helm repository
   kubernetes.core.helm_repository:
     kubeconfig: "{{ homelab_data_path }}/kubeconfig"
@@ -32,6 +82,11 @@
     data:
       password: "{{ lookup('community.general.random_string', length=20, special=false) }}"
   when: check_argocd_admin_password is failed
+
+- name: Retrieve CA bundle from local file
+  ansible.builtin.slurp:
+    src: "{{ homelab_data_path }}/{{ ipaserver_realm }}_IPA_CA.pem"
+  register: cert
 
 - name: Install ArgoCD chart
   kubernetes.core.helm:

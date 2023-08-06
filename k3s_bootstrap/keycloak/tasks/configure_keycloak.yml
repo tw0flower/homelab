@@ -1,5 +1,5 @@
 ---
-- name: Ensure that the user realms exists
+- name: Ensure that the users realm exists
   community.general.keycloak_realm:
     auth_keycloak_url: "https://keycloak.{{ k3s_zone }}"
     auth_client_id: admin-cli
@@ -9,6 +9,7 @@
                               'secret=kvv2/data/keycloak/admin_password:pwd validate_certs=False') }}"
     id: users
     realm: users
+    enabled: true
     state: present
     validate_certs: false
 
@@ -72,6 +73,7 @@
       usernameLDAPAttribute: uid
       userObjectClasses: "inetuser"
       usersDn: "cn=users,cn=accounts,{{ ['dc='] | product(ipaserver_domain_list) | map('join') | join(',') }}"
+      uuidLDAPAttribute: uidNumber
       vendor: other
     mappers:
       - name: group
@@ -83,6 +85,6 @@
           membership.ldap.attribute: member
           membership.user.ldap.attribute: uid
           mode: READ_ONLY
-          user.roles.retrieve.strategy: GET_GROUPS_BY_MEMBEROF_ATTRIBUTE
+          user.roles.retrieve.strategy: GET_GROUPS_FROM_USER_MEMBEROF_ATTRIBUTE
           default.ldap.groups.path: /
           groups.dn: cn=groups,cn=accounts,dc=int,dc=ankhmorpork,dc=host
