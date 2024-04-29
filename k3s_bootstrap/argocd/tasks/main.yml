@@ -9,131 +9,280 @@
     ansible_hashi_vault_token: "{{ vault_token_b64.content | b64decode }}"
     ansible_hashi_vault_url: "https://vault.{{ k3s_zone }}"
 
-- name: Ensure groups client scope exists
-  community.general.keycloak_clientscope:
-    auth_keycloak_url: "https://keycloak.{{ k3s_zone }}"
-    auth_client_id: admin-cli
-    auth_realm: master
-    auth_username: admin
-    auth_password: "{{ lookup('community.hashi_vault.hashi_vault',
-                              'secret=kvv2/data/keycloak/admin_password:pwd validate_certs=False') }}"
-    validate_certs: false
-    realm: users
-    name: groups
-    protocol: "openid-connect"
-    protocol_mappers:
-      - config:
-          access.token.claim: true
-          claim.name: "groups"
-          full.path: false
-          id.token.claim: true
-          userinfo.token.claim: true
-        name: groups
-        protocol: openid-connect
-        protocolMapper: oidc-group-membership-mapper
+# - name: Ensure groups client scope exists
+#   community.general.keycloak_clientscope:
+#     auth_keycloak_url: "https://keycloak.{{ k3s_zone }}"
+#     auth_client_id: admin-cli
+#     auth_realm: master
+#     auth_username: admin
+#     auth_password: "{{ lookup('community.hashi_vault.hashi_vault',
+#                               'secret=kvv2/data/keycloak/admin_password:pwd validate_certs=False') }}"
+#     validate_certs: false
+#     realm: users
+#     name: groups
+#     protocol: "openid-connect"
+#     protocol_mappers:
+#       - config:
+#           access.token.claim: true
+#           claim.name: "groups"
+#           full.path: false
+#           id.token.claim: true
+#           userinfo.token.claim: true
+#         name: groups
+#         protocol: openid-connect
+#         protocolMapper: oidc-group-membership-mapper
 
-- name: Ensure ArgoCD's Keycloak client exists
-  community.general.keycloak_client:
-    auth_keycloak_url: "https://keycloak.{{ k3s_zone }}"
-    auth_client_id: admin-cli
-    auth_realm: master
-    auth_username: admin
-    auth_password: "{{ lookup('community.hashi_vault.hashi_vault',
-                              'secret=kvv2/data/keycloak/admin_password:pwd validate_certs=False') }}"
-    realm: users
-    name: argocd
-    client_id: argocd
-    protocol: openid-connect
-    root_url: "https://argocd.{{ k3s_zone }}"
-    validate_certs: false
-    public_client: true
-    default_client_scopes:
-      - "acr"
-      - "email"
-      - "profile"
-      - "roles"
-      - "web-origins"
-      - "groups"
-      - "offline_access"
-    redirect_uris:
-      - "https://argocd.{{ k3s_zone }}/auth/callback"
-  register: keycloak_argocd_client
+# - name: Ensure ArgoCD's Keycloak client exists
+#   community.general.keycloak_client:
+#     auth_keycloak_url: "https://keycloak.{{ k3s_zone }}"
+#     auth_client_id: admin-cli
+#     auth_realm: master
+#     auth_username: admin
+#     auth_password: "{{ lookup('community.hashi_vault.hashi_vault',
+#                               'secret=kvv2/data/keycloak/admin_password:pwd validate_certs=False') }}"
+#     realm: users
+#     name: argocd
+#     client_id: argocd
+#     protocol: openid-connect
+#     root_url: "https://argocd.{{ k3s_zone }}"
+#     validate_certs: false
+#     public_client: true
+#     default_client_scopes:
+#       - "acr"
+#       - "email"
+#       - "profile"
+#       - "roles"
+#       - "web-origins"
+#       - "groups"
+#       - "offline_access"
+#     redirect_uris:
+#       - "https://argocd.{{ k3s_zone }}/auth/callback"
+#   register: keycloak_argocd_client
 
-- name: Add ArgoCD Helm repository
-  kubernetes.core.helm_repository:
-    kubeconfig: "{{ homelab_data_path }}/kubeconfig"
-    url: https://argoproj.github.io/argo-helm
-    name: argocd
+# - name: Add ArgoCD Helm repository
+#   kubernetes.core.helm_repository:
+#     kubeconfig: "{{ homelab_data_path }}/kubeconfig"
+#     url: https://argoproj.github.io/argo-helm
+#     name: argocd
 
-- name: Check if the ArgoCD admin password exists in Vault
-  ansible.builtin.set_fact:
-    keycloak_admin_pwd: "{{ lookup('community.hashi_vault.hashi_vault',
-                                      'secret=kvv2/data/argocd/admin_password validate_certs=False') }}"
-  register: check_argocd_admin_password
-  ignore_errors: true
+# - name: Check if the ArgoCD admin password exists in Vault
+#   ansible.builtin.set_fact:
+#     keycloak_admin_pwd: "{{ lookup('community.hashi_vault.hashi_vault',
+#                                       'secret=kvv2/data/argocd/admin_password validate_certs=False') }}"
+#   register: check_argocd_admin_password
+#   ignore_errors: true
 
-- name: Create ArgoCD admin password in Vault
-  community.hashi_vault.vault_kv2_write:
-    token: "{{ ansible_hashi_vault_token }}"
-    url: https://vault.{{ k3s_zone }}
-    validate_certs: false
-    path: argocd/admin_password
-    engine_mount_point: "kvv2"
-    data:
-      password: "{{ lookup('community.general.random_string', length=20, special=false) }}"
-  when: check_argocd_admin_password is failed
+# - name: Create ArgoCD admin password in Vault
+#   community.hashi_vault.vault_kv2_write:
+#     token: "{{ ansible_hashi_vault_token }}"
+#     url: https://vault.{{ k3s_zone }}
+#     validate_certs: false
+#     path: argocd/admin_password
+#     engine_mount_point: "kvv2"
+#     data:
+#       password: "{{ lookup('community.general.random_string', length=20, special=false) }}"
+#   when: check_argocd_admin_password is failed
 
 - name: Retrieve CA bundle from local file
   ansible.builtin.slurp:
     src: "{{ homelab_data_path }}/{{ ipaserver_realm }}_IPA_CA.pem"
   register: cert
 
-- name: Install ArgoCD chart
-  kubernetes.core.helm:
-    kubeconfig: "{{ homelab_data_path }}/kubeconfig"
-    wait: true
-    chart_ref: argocd/argo-cd
-    release_namespace: argocd
-    release_name: argocd
-    create_namespace: true
-    values:
-      configs:
-        secret:
-          argocdServerAdminPassword: "{{ lookup('community.hashi_vault.hashi_vault',
-                                                'secret=kvv2/data/argocd/admin_password validate_certs=False')['password'] | password_hash('bcrypt') }}"
+# - name: Install ArgoCD chart
+#   kubernetes.core.helm:
+#     kubeconfig: "{{ homelab_data_path }}/kubeconfig"
+#     wait: true
+#     chart_ref: argocd/argo-cd
+#     create_namespace: true
+#     release_namespace: argocd
+#     release_name: argocd
+#     values:
+#       configs:
+#         cm:
+#           application.resourceTrackingMethod: annotation+label
+#         secret:
+#           argocdServerAdminPassword: "{{ lookup('community.hashi_vault.hashi_vault',
+#                                                 'secret=kvv2/data/argocd/admin_password validate_certs=False')['password'] | password_hash('bcrypt') }}"
+#       repoServer:
+#         certificateSecret:
+#           ca: "{{ cert.content | b64decode }}"
 
-- name: Create Ingress for ArgoCD
+# - name: Set Vault configuration
+#   kubernetes.core.k8s:
+#     kubeconfig: "{{ homelab_data_path }}/kubeconfig"
+#     namespace: argocd
+#     definition:
+#       apiVersion: v1
+#       data:
+#         VAULT_ADDR: "{{ ('https://vault.' + k3s_zone) | b64encode }}"
+#         VAULT_TOKEN: "{{ vault_token_b64.content }}"
+#         AVP_AUTH_TYPE: "{{ 'token' | b64encode }}"
+#         AVP_TYPE: "{{ 'vault' | b64encode }}"
+#       kind: Secret
+#       metadata:
+#         name: vault-configuration
+#         namespace: argocd
+#       type: Opaque
+
+
+# - name: Create Ingress for ArgoCD
+#   kubernetes.core.k8s:
+#     kubeconfig: "{{ homelab_data_path }}/kubeconfig"
+#     definition:
+#       apiVersion: networking.k8s.io/v1
+#       kind: Ingress
+#       metadata:
+#         name: argocd-server-ingress
+#         namespace: argocd
+#         annotations:
+#           nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+#           nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+#           cert-manager.io/cluster-issuer: internal-acme-issuer
+#           external-dns.alpha.kubernetes.io/hostname: argocd.{{ k3s_zone }}
+#           nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+#       spec:
+#         ingressClassName: "nginx"
+#         rules:
+#           - host: argocd.{{ k3s_zone }}
+#             http:
+#               paths:
+#                 - path: /
+#                   pathType: Prefix
+#                   backend:
+#                     service:
+#                       name: argocd-server
+#                       port:
+#                         name: https
+#         tls:
+#           - hosts:
+#               - argocd.{{ k3s_zone }}
+#             secretName: argocd-secret
+
+# - name: Ensure the configMap for argocd-vault-plugin-helm exists
+#   kubernetes.core.k8s:
+#     kubeconfig: "{{ homelab_data_path }}/kubeconfig"
+#     namespace: argocd
+#     definition:
+#       apiVersion: v1
+#       kind: ConfigMap
+#       metadata:
+#         name: cmp-plugin
+#       data:
+#         avp-helm.yaml: |
+#           ---
+#           apiVersion: argoproj.io/v1alpha1
+#           kind: ConfigManagementPlugin
+#           metadata:
+#             name: argocd-vault-plugin-helm
+#           spec:
+#             allowConcurrency: true
+#             discover:
+#               find:
+#                 command:
+#                   - sh
+#                   - "-c"
+#                   - "find . -name 'Chart.yaml' && find . -name 'values.yaml'"
+#             generate:
+#               command:
+#                 - sh
+#                 - "-c"
+#                 - |
+#                   helm template $ARGOCD_APP_NAME --include-crds . |
+#                   argocd-vault-plugin generate -s vault-configuration -
+#             lockRepo: false
+#         avp-kustomize.yaml: |
+#           ---
+#           apiVersion: argoproj.io/v1alpha1
+#           kind: ConfigManagementPlugin
+#           metadata:
+#             name: argocd-vault-plugin-kustomize
+#           spec:
+#             allowConcurrency: true
+#             discover:
+#               find:
+#                 command:
+#                   - find
+#                   - "."
+#                   - -name
+#                   - kustomization.yaml
+#             generate:
+#               command:
+#                 - sh
+#                 - "-c"
+#                 - "kustomize build . | argocd-vault-plugin generate -s vault-configuration -"
+#             lockRepo: false
+#         avp.yaml: |
+#           ---
+#           apiVersion: argoproj.io/v1alpha1
+#           kind: ConfigManagementPlugin
+#           metadata:
+#             name: argocd-vault-plugin
+#           spec:
+#             allowConcurrency: true
+#             discover:
+#               find:
+#                 command:
+#                   - sh
+#                   - "-c"
+#                   - "find . -name '*.yaml' | xargs -I {} grep \"<path\\|avp\\.kubernetes\\.io\" {} | grep ."
+#             generate:
+#               command:
+#                 - sh
+#                 - "-c"
+#                 - "argocd-vault-plugin generate -s vault-configuration - ."
+
+- name: Patch ArgoCD deployment to include argocd-vault-plugin
   kubernetes.core.k8s:
     kubeconfig: "{{ homelab_data_path }}/kubeconfig"
+    namespace: argocd
     definition:
-      apiVersion: networking.k8s.io/v1
-      kind: Ingress
+      apiVersion: apps/v1
+      kind: Deployment
       metadata:
-        name: argocd-server-ingress
-        namespace: argocd
-        annotations:
-          nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-          nginx.ingress.kubernetes.io/ssl-passthrough: "true"
-          cert-manager.io/cluster-issuer: internal-acme-issuer
-          external-dns.alpha.kubernetes.io/hostname: argocd.{{ k3s_zone }}
-          nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+        name: argocd-repo-server
       spec:
-        ingressClassName: "nginx"
-        rules:
-          - host: argocd.{{ k3s_zone }}
-            http:
-              paths:
-                - path: /
-                  pathType: Prefix
-                  backend:
-                    service:
-                      name: argocd-server
-                      port:
-                        name: https
-        tls:
-          - hosts:
-              - argocd.{{ k3s_zone }}
-            secretName: argocd-secret
+        template:
+          spec:
+            automountServiceAccountToken: true
+            volumes:
+            - name: custom-ca
+              emptyDir: {}
+            - name: sops-age
+              secret:
+                secretName: sops-age
+            volumeMounts:
+            - mountPath: /usr/local/bin/kustomize
+              name: custom-tools
+              subPath: kustomize
+            - mountPath: /.config/kustomize/plugin/viaduct.ai/v1/ksops/ksops
+              name: custom-tools
+              subPath: ksops
+            - mountPath: /.config/sops/age/keys.txt
+              name: sops-age
+              subPath: keys.txt
+            initContainers:
+            - name: custom-ca
+              image: docker.io/alpine
+              env:
+                - name: CUSTOM_CA
+                  value: |
+                    {{ cert.content | b64decode }}
+              command: [sh, -c]
+              args:
+                - >-
+                  cp /etc/ssl/certs/ca-certificates.crt /custom-ca &&
+                  echo "$CUSTOM_CA" >> /custom-ca/ca-certificates.crt
+              volumeMounts:
+                - mountPath: /custom-ca
+                  name: custom-ca
+            - name: install-ksops
+              image: viaductoss/ksops:v4.3.1
+              command: ["/bin/sh", "-c"]
+              args:
+              - 'echo "Installing KSOPS..."; cp ksops /custom-tools/; cp $GOPATH/bin/kustomize /custom-tools/; echo "Done.";'
+              volumeMounts:
+                - mountPath: /custom-tools
+                  name: custom-tools
 
 # - name: Create TLS certificates for ArgoCD
 #   kubernetes.core.k8s:

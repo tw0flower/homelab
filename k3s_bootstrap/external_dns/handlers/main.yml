@@ -1,7 +1,0 @@
----
-# handlers file for k3s
-- name: Restart named
-  ansible.builtin.service:
-    name: named
-    state: restarted
-  delegate_to: "{{ groups['freeipa'][0] }}"

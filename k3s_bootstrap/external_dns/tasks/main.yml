@@ -1,8 +1,0 @@
----
-- name: Configure FreeIPA
-  ansible.builtin.include_tasks:
-    file: configure_freeipa.yml
-
-- name: Deploy external DNS
-  ansible.builtin.include_tasks:
-    file: deploy_external_dns.yml
